@@ -185,12 +185,10 @@ async function initializeDatabase() {
 // Export the function so it can be called from other files
 export { initializeDatabase };
 
-// Run the initialization if this file is executed directly
-if (require.main === module) {
-  initializeDatabase()
-    .then(() => process.exit(0))
-    .catch((error) => {
-      console.error('Initialization failed:', error);
-      process.exit(1);
-    });
-}
+// Run the initialization (for direct execution with tsx)
+initializeDatabase()
+  .then(() => console.log('Database initialization completed'))
+  .catch((error) => {
+    console.error('Initialization failed:', error);
+    process.exit(1);
+  });
