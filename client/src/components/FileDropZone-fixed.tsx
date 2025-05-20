@@ -15,6 +15,32 @@ export default function FileDropZone() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const getDocumentType = (filename: string): string => {
+    const extension = filename.split(".").pop()?.toLowerCase() || "";
+    
+    if (extension === "pdf") return "pdf";
+    if (["doc", "docx"].includes(extension)) return "document";
+    if (["txt", "md"].includes(extension)) return "note";
+    return "article";
+  };
+
+  const getFileIcon = (filename: string) => {
+    const extension = filename.split(".").pop()?.toLowerCase() || "";
+    
+    switch (extension) {
+      case "pdf":
+        return <FileText className="text-red-500" size={24} />;
+      case "doc":
+      case "docx":
+        return <FileText className="text-blue-500" size={24} />;
+      case "txt":
+      case "md":
+        return <File className="text-gray-500" size={24} />;
+      default:
+        return <FileType className="text-gray-500" size={24} />;
+    }
+  };
+
   const uploadMutation = useMutation({
     mutationFn: async (file: File) => {
       const formData = new FormData();
@@ -72,32 +98,6 @@ export default function FileDropZone() {
       return () => clearTimeout(timeout);
     }
   }, [uploadMutation.isPending, selectedFile, uploadProgress]);
-
-  const getDocumentType = (filename: string): string => {
-    const extension = filename.split(".").pop()?.toLowerCase() || "";
-    
-    if (extension === "pdf") return "pdf";
-    if (["doc", "docx"].includes(extension)) return "document";
-    if (["txt", "md"].includes(extension)) return "note";
-    return "article";
-  };
-
-  const getFileIcon = (filename: string) => {
-    const extension = filename.split(".").pop()?.toLowerCase() || "";
-    
-    switch (extension) {
-      case "pdf":
-        return <FileText className="text-red-500" size={24} />;
-      case "doc":
-      case "docx":
-        return <FileText className="text-blue-500" size={24} />;
-      case "txt":
-      case "md":
-        return <File className="text-gray-500" size={24} />;
-      default:
-        return <FileType className="text-gray-500" size={24} />;
-    }
-  };
 
   const onDrop = (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
