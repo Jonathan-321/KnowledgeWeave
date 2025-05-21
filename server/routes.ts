@@ -5,7 +5,8 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { processDocument } from "./services/documentProcessor";
-import { generateInsights, extractConcepts, generateQuizQuestions } from "./services/anthropic";
+import { generateInsights, extractConcepts } from "./services/anthropic";
+import { generateQuizQuestions } from "./services/quizGenerator";
 import { getRecommendedConcepts } from "./services/vectordb";
 import {
   insertDocumentSchema,
