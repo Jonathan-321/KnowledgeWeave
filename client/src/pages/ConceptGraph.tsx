@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import KnowledgeGraph from '@/components/KnowledgeGraph';
-import ConceptView from '@/components/ConceptView';
+import ConceptDetailsPanel from '@/components/ConceptDetailsPanel';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Concept } from '@shared/schema';
@@ -56,19 +56,16 @@ export default function ConceptGraph() {
       {/* Concept Detail View (when a concept is selected) */}
       {showConceptView && selectedConcept && (
         <div className="border rounded-lg p-6 bg-background">
-          <ConceptView 
-            concept={selectedConcept} 
-            onBack={handleBackToGraph} 
-          />
+          {/* No need for inline view as we're using the dialog */}
         </div>
       )}
 
       {/* Dialog for showing concept details */}
       <Dialog open={showConceptView} onOpenChange={setShowConceptView}>
-        <DialogContent className="max-w-4xl p-0">
+        <DialogContent className="max-w-4xl p-6">
           {selectedConcept && (
-            <div className="p-6">
-              <div className="mb-6 flex justify-between items-center">
+            <>
+              <div className="mb-4 flex justify-between items-center">
                 <h2 className="text-2xl font-bold">{selectedConcept.name}</h2>
                 <Button variant="outline" size="sm" onClick={() => setShowConceptView(false)}>
                   <ArrowLeft className="mr-2 h-4 w-4" />
@@ -76,80 +73,116 @@ export default function ConceptGraph() {
                 </Button>
               </div>
               
-              <p className="text-muted-foreground mb-6">{selectedConcept.description}</p>
+              <div className="tabs-header grid grid-cols-4 gap-1 mb-6">
+                <div className="tab-item text-center py-2 border-b-2 border-primary font-medium">
+                  Overview
+                </div>
+                <div className="tab-item text-center py-2 border-b-2 border-gray-200 text-gray-500">
+                  Connections
+                </div>
+                <div className="tab-item text-center py-2 border-b-2 border-gray-200 text-gray-500">
+                  Sources
+                </div>
+                <div className="tab-item text-center py-2 border-b-2 border-gray-200 text-gray-500">
+                  Insights
+                </div>
+              </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-3">Concept Details</h3>
-                  <div className="space-y-4">
-                    {/* Tags */}
-                    <div>
-                      <h4 className="text-sm font-medium mb-1">Tags</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedConcept.tags?.map((tag, index) => (
-                          <span key={index} className="px-2 py-1 bg-secondary text-secondary-foreground rounded-full text-xs">
-                            {tag}
-                          </span>
-                        ))}
+                <div className="border p-6 rounded-lg">
+                  <h3 className="text-lg font-bold mb-4">Concept Details</h3>
+                  
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium mb-2">Tags</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedConcept.tags?.map((tag, index) => (
+                        <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium mb-2">Learning Progress</h4>
+                    <div className="mb-3">
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Comprehension</span>
+                        <span className="text-green-600">65%</span>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full">
+                        <div className="h-full bg-green-500 rounded-full" style={{ width: '65%' }}></div>
                       </div>
                     </div>
                     
-                    {/* Learning Progress */}
                     <div>
-                      <h4 className="text-sm font-medium mb-1">Learning Progress</h4>
-                      <div className="space-y-2">
-                        <div>
-                          <div className="flex justify-between text-sm">
-                            <span>Comprehension</span>
-                            <span>65%</span>
-                          </div>
-                          <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                            <div className="h-full bg-green-500 rounded-full" style={{ width: '65%' }} />
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <div className="flex justify-between text-sm">
-                            <span>Practice</span>
-                            <span>50%</span>
-                          </div>
-                          <div className="h-2 bg-secondary rounded-full overflow-hidden">
-                            <div className="h-full bg-blue-500 rounded-full" style={{ width: '50%' }} />
-                          </div>
-                        </div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span>Practice</span>
+                        <span className="text-blue-600">50%</span>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full">
+                        <div className="h-full bg-blue-500 rounded-full" style={{ width: '50%' }}></div>
                       </div>
                     </div>
                   </div>
                   
-                  <Button className="w-full mt-6" onClick={handleLearnConcept}>
-                    Learn This Concept
+                  <Button 
+                    className="w-full mt-4" 
+                    onClick={() => {
+                      setShowConceptView(false);
+                      navigate(`/learning?conceptId=${selectedConcept.id}`);
+                    }}
+                  >
+                    Start Learning Session
                   </Button>
                 </div>
                 
-                <div>
-                  <h3 className="text-lg font-medium mb-3">Connected Concepts</h3>
-                  <div className="space-y-2">
-                    {concepts && concepts
-                      .filter((c: any) => c.id !== selectedConcept.id)
-                      .slice(0, 3)
-                      .map((concept: any) => (
-                        <div 
-                          key={concept.id} 
-                          className="p-3 border rounded flex items-center gap-3 cursor-pointer hover:bg-secondary/30"
-                          onClick={() => setSelectedConcept(concept)}
-                        >
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M8 1V15M1 8H15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                          <span>{concept.name}</span>
-                          <ArrowLeft className="h-4 w-4 ml-auto transform rotate-180" />
-                        </div>
-                      ))
-                    }
+                <div className="border p-6 rounded-lg">
+                  <h3 className="text-lg font-bold mb-4">Connected Concepts</h3>
+                  <div className="space-y-3">
+                    {concepts && Array.isArray(concepts) && 
+                      concepts
+                        .filter((c: any) => c.id !== selectedConcept.id)
+                        .slice(0, 3)
+                        .map((concept: any) => (
+                          <div 
+                            key={concept.id}
+                            className="flex items-center p-2 border rounded-lg cursor-pointer hover:bg-gray-50"
+                            onClick={() => setSelectedConcept(concept)}
+                          >
+                            <div className="w-6 h-6 mr-3 flex items-center justify-center text-blue-500">
+                              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M12 5v14M5 12h14"></path>
+                              </svg>
+                            </div>
+                            <span className="flex-1">{concept.name}</span>
+                            <ArrowLeft className="h-4 w-4 transform rotate-180" />
+                          </div>
+                        ))
+                      }
                   </div>
                 </div>
               </div>
-            </div>
+              
+              <div className="flex justify-between mt-8">
+                <Button 
+                  variant="outline"
+                  onClick={() => setShowConceptView(false)}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back to Graph
+                </Button>
+                
+                <Button 
+                  onClick={() => {
+                    setShowConceptView(false);
+                    navigate(`/learning?conceptId=${selectedConcept.id}`);
+                  }}
+                >
+                  Learn This Concept
+                </Button>
+              </div>
+            </>
           )}
         </DialogContent>
       </Dialog>
