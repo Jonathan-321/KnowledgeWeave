@@ -14,13 +14,11 @@ export default function Learning() {
   // Fetch all concepts
   const { data: concepts, isLoading: isLoadingConcepts } = useQuery({
     queryKey: ['/api/concepts'],
-    queryFn: () => apiRequest('/api/concepts'),
   });
   
   // Fetch learning progress data
   const { data: learningProgress, isLoading: isLoadingProgress } = useQuery({
     queryKey: ['/api/learning'],
-    queryFn: () => apiRequest('/api/learning'),
   });
 
   // Format date for display

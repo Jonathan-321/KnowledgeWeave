@@ -349,8 +349,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Learning Progress API
-  app.get("/api/learning/:conceptId", async (req, res) => {
+  // Learning Progress API with enhanced spaced repetition
+  app.get("/api/learning", async (_req, res) => {
+    try {
+      const allProgress = await storage.getAllLearningProgress();
+      res.json(allProgress);
+    } catch (error: any) {
+      res.status(500).json({ message: "Error fetching all learning progress", error: error.message });
+    }
+  });
+  app.get("/api/learning/concept/:conceptId", async (req, res) => {
     try {
       const conceptId = parseInt(req.params.conceptId);
       const progress = await storage.getLearningProgressByConceptId(conceptId);
@@ -397,7 +405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/learning/:conceptId", async (req, res) => {
+  app.post("/api/learning/progress/:conceptId", async (req, res) => {
     try {
       const conceptId = parseInt(req.params.conceptId);
       const progress = await storage.getLearningProgressByConceptId(conceptId);

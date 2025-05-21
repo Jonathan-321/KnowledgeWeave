@@ -49,7 +49,6 @@ export function AdaptiveQuiz({ conceptId }: QuizProps) {
   // Fetch concept information
   const { data: concept } = useQuery({
     queryKey: ['/api/concepts', conceptId],
-    queryFn: () => apiRequest(`/api/concepts/${conceptId}`),
   });
 
   // Fetch adaptive quiz questions
@@ -61,19 +60,24 @@ export function AdaptiveQuiz({ conceptId }: QuizProps) {
     refetch 
   } = useQuery({
     queryKey: ['/api/quiz', conceptId],
-    queryFn: () => apiRequest(`/api/quiz/${conceptId}`),
   });
 
   // Update learning progress mutation
   const updateProgress = useMutation({
-    mutationFn: (data: { quality: number, duration: number }) => {
-      return apiRequest(`/api/learning/progress/${conceptId}`, {
+    mutationFn: async (data: { quality: number, duration: number }) => {
+      const response = await fetch(`/api/learning/progress/${conceptId}`, {
         method: 'POST',
         body: JSON.stringify(data),
         headers: {
           'Content-Type': 'application/json',
         },
       });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update learning progress');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/learning'] });
