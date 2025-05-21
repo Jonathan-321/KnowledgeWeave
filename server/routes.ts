@@ -352,9 +352,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Learning Progress API with enhanced spaced repetition
   app.get("/api/learning", async (_req, res) => {
     try {
-      // Initialize with empty array if no progress exists yet
-      const allProgress = await storage.getAllLearningProgress() || [];
-      res.json(allProgress);
+      // Create some temporary demo data since we're having db issues
+      // This will let us test the UI flow while we work on the db integration
+      const demoProgress = [
+        {
+          id: 1,
+          conceptId: 1,
+          comprehension: 65,
+          practice: 50,
+          lastReviewed: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+          nextReviewDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+          userId: 1,
+          interval: 2,
+          easeFactor: 250,
+          reviewCount: 3
+        },
+        {
+          id: 2,
+          conceptId: 2,
+          comprehension: 80,
+          practice: 70,
+          lastReviewed: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+          nextReviewDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), 
+          userId: 1,
+          interval: 3,
+          easeFactor: 280,
+          reviewCount: 4
+        },
+        {
+          id: 3,
+          conceptId: 3,
+          comprehension: 40,
+          practice: 30,
+          lastReviewed: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+          nextReviewDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          userId: 1,
+          interval: 1,
+          easeFactor: 220,
+          reviewCount: 2
+        }
+      ];
+      res.json(demoProgress);
     } catch (error: any) {
       console.error("Learning progress error:", error);
       // Return empty array instead of error to prevent frontend errors
@@ -364,31 +402,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/learning/concept/:conceptId", async (req, res) => {
     try {
       const conceptId = parseInt(req.params.conceptId);
-      const progress = await storage.getLearningProgressByConceptId(conceptId);
       
-      if (!progress) {
-        // If no progress exists, create initial progress
-        const newProgress = await storage.createLearningProgress({
+      // Use the demo data for now
+      const demoProgress = [
+        {
+          id: 1,
+          conceptId: 1,
+          comprehension: 65,
+          practice: 50,
+          lastReviewed: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+          nextReviewDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+          userId: 1,
+          interval: 2,
+          easeFactor: 250,
+          reviewCount: 3
+        },
+        {
+          id: 2,
+          conceptId: 2,
+          comprehension: 80,
+          practice: 70,
+          lastReviewed: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+          nextReviewDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), 
+          userId: 1,
+          interval: 3,
+          easeFactor: 280,
+          reviewCount: 4
+        },
+        {
+          id: 3,
+          conceptId: 3,
+          comprehension: 40,
+          practice: 30,
+          lastReviewed: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+          nextReviewDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          userId: 1,
+          interval: 1,
+          easeFactor: 220,
+          reviewCount: 2
+        }
+      ];
+      
+      const foundProgress = demoProgress.find(p => p.conceptId === conceptId);
+      
+      if (!foundProgress) {
+        // If no progress exists, return default initial progress
+        const initialProgress = {
+          id: 100 + conceptId,
           conceptId,
-          userId: 1, // Default user
           comprehension: 0,
           practice: 0,
-          lastReviewed: new Date(),
-          nextReviewDate: new Date()
-        });
-        return res.json(newProgress);
+          lastReviewed: null,
+          nextReviewDate: new Date().toISOString(),
+          userId: 1,
+          interval: 0,
+          easeFactor: 250,
+          reviewCount: 0
+        };
+        
+        res.json(initialProgress);
+      } else {
+        res.json(foundProgress);
       }
-      
-      res.json(progress);
     } catch (error: any) {
       // Return empty object instead of error to prevent frontend issues
       res.json({
+        id: 999,
         conceptId: parseInt(req.params.conceptId),
         userId: 1,
         comprehension: 0,
         practice: 0,
-        lastReviewed: new Date(),
-        nextReviewDate: new Date()
+        lastReviewed: new Date().toISOString(),
+        nextReviewDate: new Date().toISOString(),
+        interval: 0,
+        easeFactor: 250,
+        reviewCount: 0
       });
     }
   });

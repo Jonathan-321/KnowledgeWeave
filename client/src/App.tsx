@@ -10,6 +10,7 @@ import Home from "./pages/Home";
 import Documents from "./pages/Documents";
 import Learning from "./pages/Learning";
 import Insights from "./pages/Insights";
+import ConceptGraph from "./pages/ConceptGraph";
 
 function Router() {
   return (
@@ -19,6 +20,7 @@ function Router() {
         <Route path="/documents" component={Documents} />
         <Route path="/learning" component={Learning} />
         <Route path="/insights" component={Insights} />
+        <Route path="/knowledge" component={ConceptGraph} />
         <Route component={NotFound} />
       </Switch>
     </MainLayout>
