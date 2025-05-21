@@ -58,10 +58,20 @@ export default function KnowledgeGraph({ onSelectConcept }: KnowledgeGraphProps)
     setSelectedNode(node);
     
     if (node.type === "concept") {
+      // Find the full concept data from our concepts
       const concept = concepts?.find((c: Concept) => c.id === node.id);
+      
       if (concept) {
+        // Log the concept that's being selected (for debugging)
+        console.log("Selected concept:", concept);
+        
+        // Trigger the parent component's handler
         onSelectConcept(concept);
+      } else {
+        console.error("Concept not found in available concepts:", node.id);
       }
+    } else {
+      console.log("Clicked on non-concept node:", node);
     }
   };
 
