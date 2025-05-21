@@ -91,17 +91,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
           // Extract concepts and create connections
           const concepts = await extractConcepts(processedDoc.content);
+          console.log(`Extracted ${concepts.length} concepts from document ${document.id}`);
+          
+          // Array to track all created/found concepts for relationship creation
+          const conceptIds = [];
+          
           for (const concept of concepts) {
             if (concept.name) {
-              const existingConcept = await storage.getConceptByName(concept.name);
-              if (!existingConcept) {
-                await storage.createConcept({
-                  name: concept.name,
-                  description: concept.description || 'No description available',
-                  tags: concept.tags || [],
-                  userId: concept.userId || 1
-                });
+              try {
+                // Check if concept already exists
+                let conceptId;
+                const existingConcept = await storage.getConceptByName(concept.name);
+                
+                if (existingConcept) {
+                  console.log(`Found existing concept: ${concept.name}`);
+                  conceptId = existingConcept.id;
+                } else {
+                  // Create new concept
+                  console.log(`Creating new concept: ${concept.name}`);
+                  const newConcept = await storage.createConcept({
+                    name: concept.name,
+                    description: concept.description || 'No description available',
+                    tags: concept.tags || [],
+                    userId: 1
+                  });
+                  conceptId = newConcept.id;
+                }
+                
+                // Add to our tracked concepts
+                if (conceptId) {
+                  conceptIds.push(conceptId);
+                  
+                  // Create document-concept relationship
+                  await storage.createDocumentConcept({
+                    documentId: document.id,
+                    conceptId: conceptId,
+                    relevance: 75 // Default relevance
+                  });
+                }
+              } catch (error) {
+                console.error(`Error processing concept ${concept.name}:`, error);
               }
+            }
+          }
+          
+          // Create relationships between concepts extracted from the same document
+          // This helps build the knowledge graph connections
+          if (conceptIds.length > 1) {
+            console.log(`Creating concept connections for document ${document.id}`);
+            for (let i = 0; i < conceptIds.length; i++) {
+              for (let j = i + 1; j < conceptIds.length; j++) {
+                try {
+                  await storage.createConceptConnection({
+                    sourceConceptId: conceptIds[i],
+                    targetConceptId: conceptIds[j],
+                    relationshipType: "related",
+                    strength: "moderate"
+                  });
+                } catch (error) {
+                  console.error(`Error creating concept connection between ${conceptIds[i]} and ${conceptIds[j]}:`, error);
+                }
+              }
+            }
+          }
+          
+          // Generate insights based on all concepts
+          if (conceptIds.length > 0) {
+            try {
+              const allConcepts = await storage.getAllConcepts();
+              const insights = await generateInsights(allConcepts);
+              
+              for (const insight of insights) {
+                if (insight.content) {
+                  await storage.createInsight({
+                    content: insight.content,
+                    relatedConceptIds: insight.relatedConceptIds || [],
+                    userId: 1
+                  });
+                }
+              }
+            } catch (error) {
+              console.error("Error generating insights:", error);
             }
           }
         })
