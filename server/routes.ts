@@ -680,36 +680,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Generate adaptive quiz questions using Claude AI
-      const { generateQuizQuestions } = await import('./services/anthropic'); 
+      // Use our dedicated quizGenerator service
       try {
-        const questions = await generateQuizQuestions(
-          concept,
-          progress,
-          documentContext
-        );
+        const questions = await generateQuizQuestions(concept);
         
-        // Ensure we're returning valid questions even if Claude fails
-        const validQuestions = questions && questions.length > 0 ? questions : [
-          {
-            question: `What is the primary focus of ${concept.name}?`,
-            options: [
-              concept.description.split('.')[0],
-              "It's not related to any computational models",
-              "It only works with specific hardware devices",
-              "None of the above"
-            ],
-            correctAnswer: 0,
-            explanation: `${concept.name} is primarily about ${concept.description.split('.')[0]}.`,
-            difficulty: "basic",
-            conceptArea: concept.name
-          }
-        ];
-        
-        res.json({ questions: validQuestions, progress });
+        res.json({ questions, progress });
       } catch (error) {
         console.error("Error generating quiz questions:", error);
-        // Return fallback questions if Claude API fails
+        
+        // Return basic fallback questions if quiz generator fails
         const fallbackQuestions = [
           {
             question: `What is ${concept.name} primarily used for?`,
