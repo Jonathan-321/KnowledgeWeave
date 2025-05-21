@@ -1,8 +1,5 @@
-import OpenAI from "openai";
-import { Concept, Document } from "@shared/schema";
-
-// Initialize OpenAI
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "sk-dummy-key" });
+import { Concept } from "@shared/schema";
+import { extractConcepts, generateQuizQuestions as generateAnthropicQuizQuestions } from "./anthropic";
 
 export interface QuizQuestion {
   question: string;
@@ -16,93 +13,129 @@ export interface QuizQuestion {
  */
 export async function generateQuizQuestions(
   concept: Concept,
-  relatedDocuments: Document[] = [],
+  relatedDocuments: any[] = [],
   questionCount: number = 3
 ): Promise<QuizQuestion[]> {
-  try {
-    // Extract relevant content from related documents
-    let documentContent = "";
-    if (relatedDocuments.length > 0) {
-      documentContent = relatedDocuments
-        .map(doc => doc.content)
-        .join("\n\n")
-        .substring(0, 2000); // Limit to a reasonable size
-    }
-
-    const prompt = `
-    Create ${questionCount} multiple-choice questions about "${concept.name}" for a spaced repetition learning system.
-    
-    Concept Description: ${concept.description}
-    
-    ${documentContent ? `Additional context from related documents:\n${documentContent}` : ""}
-    
-    For each question:
-    1. Write a clear, specific question that tests understanding of the concept
-    2. Provide 4 options with one correct answer
-    3. Include a brief explanation of why the correct answer is right
-    
-    Format your response as a JSON array with the following structure:
-    [
-      {
-        "question": "Question text here?",
-        "options": ["Option A", "Option B", "Option C", "Option D"],
-        "correctAnswer": 0, // Index of the correct option (0-based)
-        "explanation": "Explanation of why the correct answer is right"
-      }
-    ]
-    `;
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-      messages: [
-        { role: "system", content: "You are an educational content expert. Create high-quality learning questions that promote understanding." },
-        { role: "user", content: prompt }
-      ],
-      response_format: { type: "json_object" }
-    });
-
-    const result = JSON.parse(response.choices[0].message.content);
-    return result;
-  } catch (error) {
-    console.error("Error generating quiz questions:", error);
-    return [];
-  }
+  return generateAnthropicQuizQuestions(concept, relatedDocuments, questionCount);
 }
 
 /**
- * Schedule next review using a spaced repetition algorithm
- * Based on a simplified SuperMemo-2 algorithm
+ * Calculate next review date using a spaced repetition algorithm
+ * Based on the SuperMemo-2 algorithm
  */
 export function calculateNextReview(
   lastReviewDate: Date,
-  currentInterval: number,
-  performance: number // 0-1 where 1 is perfect recall
+  currentIntervalDays: number,
+  performanceRating: number, // 0-5 scale where 5 is perfect recall
+  previousEaseFactor: number = 2.5
 ): Date {
-  // Easiness factor (starts at 2.5 and changes based on performance)
-  const ef = Math.max(1.3, 2.5 - 0.8 * (1 - performance));
+  // The maximum performance rating is 5
+  const normalizedRating = Math.min(Math.max(performanceRating, 0), 5);
   
-  // Calculate new interval
-  let newInterval: number;
+  // Calculate the ease factor (EF) based on performance
+  // The formula adjusts the ease factor based on how well the user remembered the item
+  let newEaseFactor = previousEaseFactor + (0.1 - (5 - normalizedRating) * (0.08 + (5 - normalizedRating) * 0.02));
   
-  if (currentInterval === 0) {
-    newInterval = 1; // First review
-  } else if (currentInterval === 1) {
-    newInterval = 6; // Second review (6 days)
+  // EF should be at least 1.3
+  newEaseFactor = Math.max(newEaseFactor, 1.3);
+  
+  // Calculate the new interval
+  let newIntervalDays: number;
+  
+  if (normalizedRating < 3) {
+    // If performance was poor, start over with a short interval (1 day)
+    newIntervalDays = 1;
   } else {
-    newInterval = Math.round(currentInterval * ef);
+    // Calculate the next interval based on the current interval and ease factor
+    if (currentIntervalDays === 0) {
+      // First review
+      newIntervalDays = 1;
+    } else if (currentIntervalDays === 1) {
+      // Second review
+      newIntervalDays = 6;
+    } else {
+      // Subsequent reviews
+      newIntervalDays = Math.round(currentIntervalDays * newEaseFactor);
+    }
   }
   
-  // Cap the interval at 365 days
-  newInterval = Math.min(newInterval, 365);
-  
-  // If performance is very poor, reset interval
-  if (performance < 0.3) {
-    newInterval = 1;
-  }
-  
-  // Calculate next review date
+  // Calculate the next review date
   const nextReviewDate = new Date(lastReviewDate);
-  nextReviewDate.setDate(nextReviewDate.getDate() + newInterval);
+  nextReviewDate.setDate(nextReviewDate.getDate() + newIntervalDays);
   
   return nextReviewDate;
+}
+
+/**
+ * Convert comprehension and practice scores to a performance rating
+ * Used as input for the spaced repetition algorithm
+ */
+export function calculatePerformanceRating(comprehension: number, practice: number): number {
+  // Weight comprehension and practice scores
+  // Comprehension has 60% weight, practice has 40% weight
+  const weightedScore = (comprehension * 0.6) + (practice * 0.4);
+  
+  // Convert to 0-5 scale (from 0-100 scale)
+  return (weightedScore / 100) * 5;
+}
+
+/**
+ * Determine if a concept is due for review
+ */
+export function isDueForReview(nextReviewDate: Date | null): boolean {
+  if (!nextReviewDate) return true;
+  
+  const now = new Date();
+  return nextReviewDate <= now;
+}
+
+/**
+ * Get concepts due for review for a user
+ */
+export function getConceptsDueForReview(
+  concepts: Concept[],
+  learningProgress: any[]
+): Concept[] {
+  return concepts.filter(concept => {
+    const progress = learningProgress.find(p => p.conceptId === concept.id);
+    
+    if (!progress) return true; // No progress recorded yet, so it's due
+    
+    return isDueForReview(progress.nextReviewDate);
+  });
+}
+
+/**
+ * Suggest optimal learning path based on concept relationships and review status
+ */
+export function suggestLearningPath(
+  concepts: Concept[],
+  conceptConnections: any[],
+  learningProgress: any[]
+): Concept[] {
+  // Get concepts that are due for review
+  const dueForReview = getConceptsDueForReview(concepts, learningProgress);
+  
+  // For concepts not due for review, calculate their dependency level
+  const notDue = concepts.filter(concept => !dueForReview.includes(concept));
+  
+  // Analyze the concept graph to find dependency relationships
+  const dependencyMap = new Map<number, number>();
+  
+  for (const concept of notDue) {
+    // Count how many other concepts depend on this one
+    const dependencies = conceptConnections.filter(conn => 
+      conn.targetId === concept.id && conn.strength === 'strong'
+    ).length;
+    
+    dependencyMap.set(concept.id, dependencies);
+  }
+  
+  // Sort concepts by dependency level (most fundamental first)
+  const sortedByDependency = [...notDue].sort((a, b) => 
+    (dependencyMap.get(b.id) || 0) - (dependencyMap.get(a.id) || 0)
+  );
+  
+  // Combine due concepts with dependency-sorted concepts
+  return [...dueForReview, ...sortedByDependency];
 }

@@ -416,12 +416,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       updates.lastReviewed = new Date();
       
-      // Calculate next review date using spaced repetition algorithm
-      const progressComprehension = progress.comprehension !== null ? progress.comprehension : 0;
-      const progressPractice = progress.practice !== null ? progress.practice : 0;
-      const currentProgress = Math.max(progressComprehension, progressPractice) / 100;
-      const reviewInterval = Math.floor(Math.pow(2, currentProgress * 5)); // Days to next review
-      updates.nextReviewDate = new Date(Date.now() + reviewInterval * 24 * 60 * 60 * 1000);
+      // Use our enhanced spaced repetition algorithm
+      const { calculatePerformanceRating, calculateNextReview } = require('./services/spaceRepetition');
+      
+      // Get current values
+      const progressComprehension = req.body.comprehension !== undefined ? req.body.comprehension : (progress.comprehension || 0);
+      const progressPractice = req.body.practice !== undefined ? req.body.practice : (progress.practice || 0);
+      
+      // Calculate performance rating on 0-5 scale based on comprehension and practice scores
+      const performanceRating = calculatePerformanceRating(progressComprehension, progressPractice);
+      
+      // Calculate days since last review (or use 0 for first review)
+      const lastReviewDate = progress.lastReviewed ? new Date(progress.lastReviewed) : new Date();
+      const currentDate = new Date();
+      const daysSinceLastReview = Math.max(0, Math.floor((currentDate.getTime() - lastReviewDate.getTime()) / (24 * 60 * 60 * 1000)));
+      
+      // Calculate next review date using SuperMemo-2 algorithm
+      // This algorithm increases intervals based on performance rating
+      updates.nextReviewDate = calculateNextReview(
+        currentDate,
+        daysSinceLastReview || 0,
+        performanceRating
+      );
       
       const updatedProgress = await storage.updateLearningProgress(progress.id, updates);
       res.json(updatedProgress);
