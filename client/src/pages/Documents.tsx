@@ -44,7 +44,15 @@ export default function Documents() {
                 Manage and organize your learning materials
               </CardDescription>
             </div>
-            <Button>
+            <Button onClick={() => {
+              // Find the file drop zone or create one
+              const dropZone = document.querySelector('.file-drop-area');
+              if (dropZone) {
+                dropZone.scrollIntoView({ behavior: 'smooth' });
+              } else {
+                setSearchTerm(""); // Clear search to show empty results and file dropzone
+              }
+            }}>
               <Upload className="mr-2" size={16} />
               <span>Upload Document</span>
             </Button>
