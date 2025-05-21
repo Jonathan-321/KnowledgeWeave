@@ -74,8 +74,8 @@ export const learningProgress = pgTable("learning_progress", {
   conceptId: integer("concept_id").notNull(),
   comprehension: integer("comprehension").default(0), // 0-100
   practice: integer("practice").default(0), // 0-100
-  lastReviewed: timestamp("lastreviewed"),
-  nextReviewDate: timestamp("nextreviewdate"),
+  lastReviewed: timestamp("last_reviewed"),
+  nextReviewDate: timestamp("next_review_date"),
   userId: integer("user_id"),
   // Enhanced spaced repetition fields
   interval: integer("interval").default(0), // Current interval in days
