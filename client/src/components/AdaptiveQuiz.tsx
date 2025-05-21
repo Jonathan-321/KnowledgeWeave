@@ -60,6 +60,20 @@ export function AdaptiveQuiz({ conceptId }: QuizProps) {
     refetch 
   } = useQuery({
     queryKey: ['/api/quiz', conceptId],
+    queryFn: async () => {
+      try {
+        const response = await fetch(`/api/quiz/${conceptId}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch quiz data');
+        }
+        return response.json();
+      } catch (err) {
+        console.error('Quiz fetch error:', err);
+        throw err;
+      }
+    },
+    retry: 1,
+    enabled: !!conceptId
   });
 
   // Update learning progress mutation

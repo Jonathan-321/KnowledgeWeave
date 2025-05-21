@@ -491,13 +491,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Generate adaptive quiz questions using Claude AI
       const { generateQuizQuestions } = await import('./services/anthropic'); 
-      const questions = await generateQuizQuestions(
-        concept,
-        progress,
-        documentContext
-      );
-      
-      res.json({ questions, progress });
+      try {
+        const questions = await generateQuizQuestions(
+          concept,
+          progress,
+          documentContext
+        );
+        
+        // Ensure we're returning valid questions even if Claude fails
+        const validQuestions = questions && questions.length > 0 ? questions : [
+          {
+            question: `What is the primary focus of ${concept.name}?`,
+            options: [
+              concept.description.split('.')[0],
+              "It's not related to any computational models",
+              "It only works with specific hardware devices",
+              "None of the above"
+            ],
+            correctAnswer: 0,
+            explanation: `${concept.name} is primarily about ${concept.description.split('.')[0]}.`,
+            difficulty: "basic",
+            conceptArea: concept.name
+          }
+        ];
+        
+        res.json({ questions: validQuestions, progress });
+      } catch (error) {
+        console.error("Error generating quiz questions:", error);
+        // Return fallback questions if Claude API fails
+        const fallbackQuestions = [
+          {
+            question: `What is ${concept.name} primarily used for?`,
+            options: [
+              concept.description.split('.')[0],
+              "It has no practical applications",
+              "Only for theoretical research",
+              "None of the above"
+            ],
+            correctAnswer: 0,
+            explanation: `${concept.name} is primarily used for ${concept.description.split('.')[0]}.`,
+            difficulty: "basic",
+            conceptArea: concept.name
+          }
+        ];
+        
+        res.json({ questions: fallbackQuestions, progress });
+      }
     } catch (error: any) {
       res.status(500).json({ message: "Error generating quiz", error: error.message });
     }
