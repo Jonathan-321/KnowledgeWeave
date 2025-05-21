@@ -191,7 +191,7 @@ export async function updateLearningProgress(
   if (currentProgress && currentProgress.comprehension !== null) {
     // Weight previous score and new quality
     comprehensionScore = Math.round(
-      currentProgress.comprehension * 0.7 + (quality * 20) * 0.3
+      (currentProgress.comprehension || 0) * 0.7 + (quality * 20) * 0.3
     );
   } else {
     // First time - base on quality only
@@ -205,9 +205,9 @@ export async function updateLearningProgress(
   const spacedRepetitionData: SpacedRepetitionData = {
     conceptId,
     quality,
-    previousInterval: currentProgress?.interval,
-    previousEaseFactor: currentProgress?.easeFactor,
-    complexity: concept.complexity
+    previousInterval: currentProgress?.interval ? Number(currentProgress.interval) : undefined,
+    previousEaseFactor: currentProgress?.easeFactor ? Number(currentProgress.easeFactor) : undefined,
+    complexity: concept.complexity ? Number(concept.complexity) : undefined
   };
   
   const { nextReviewDate, interval, easeFactor } = await calculateNextReview(spacedRepetitionData);
