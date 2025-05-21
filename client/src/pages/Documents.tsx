@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Search, Upload, Filter, Grid3X3, List } from "lucide-react";
 import DocumentCard from "@/components/DocumentCard";
-import FileDropZone from "@/components/FileDropZone";
+import SimpleUpload from "@/components/SimpleUpload";
 
 export default function Documents() {
   const { documents, isLoading } = useDocuments();
@@ -112,7 +112,7 @@ export default function Documents() {
               <div className="border border-dashed border-neutral-200 dark:border-gray-700 rounded-lg p-8 text-center">
                 <p className="text-gray-500 dark:text-gray-400 mb-4">No documents found</p>
                 <div className="mb-6">
-                  <FileDropZone />
+                  <SimpleUpload />
                   <p className="text-sm text-gray-500 mt-4">
                     After uploading, your document will be processed and concepts will be automatically extracted to build your knowledge graph.
                   </p>
