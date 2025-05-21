@@ -70,8 +70,21 @@ export default function KnowledgeGraph({ onSelectConcept }: KnowledgeGraphProps)
       } else {
         console.error("Concept not found in available concepts:", node.id);
       }
+    } else if (node.type === "document") {
+      // For document nodes, create a document concept object to display
+      const documentConcept = {
+        id: node.id,
+        name: node.label,
+        description: "This document contains information related to the concepts in your knowledge graph.",
+        tags: ["document"],
+        userId: 1,
+        complexity: 3
+      };
+      
+      // Pass the document as a concept to the detail panel
+      onSelectConcept(documentConcept);
     } else {
-      console.log("Clicked on non-concept node:", node);
+      console.log("Clicked on node:", node);
     }
   };
 
