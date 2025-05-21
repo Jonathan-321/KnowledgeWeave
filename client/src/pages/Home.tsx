@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { 
   Card, 
@@ -7,14 +7,19 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { History, Zap, Plus } from "lucide-react";
+import { History, Zap, Plus, Brain } from "lucide-react";
 import KnowledgeGraph from "@/components/KnowledgeGraph";
 import InsightCard from "@/components/InsightCard";
 import ProgressBar from "@/components/ProgressBar";
+import ConceptExplorer from "@/components/ConceptExplorer";
+import ConceptDetails from "@/components/ConceptDetails";
 import { Concept } from "@shared/schema";
 
 export default function Home() {
   const [selectedConcept, setSelectedConcept] = useState<Concept | null>(null);
+  const [exploringConceptId, setExploringConceptId] = useState<number | null>(null);
+  const [learningConceptId, setLearningConceptId] = useState<number | null>(null);
+  const [, navigate] = useLocation();
 
   const { data: documents = [] } = useQuery({
     queryKey: ["/api/documents"],
@@ -26,6 +31,10 @@ export default function Home() {
 
   const { data: learningProgress = [] } = useQuery({
     queryKey: ["/api/learning"],
+  });
+  
+  const { data: concepts = [] } = useQuery({
+    queryKey: ["/api/concepts"],
   });
 
   // Get recent documents (up to 3)
@@ -64,7 +73,44 @@ export default function Home() {
             </div>
           </div>
           
-          <KnowledgeGraph onSelectConcept={setSelectedConcept} />
+          <KnowledgeGraph onSelectConcept={(concept) => {
+            setSelectedConcept(concept);
+            setExploringConceptId(concept.id);
+          }} />
+          
+          {/* Interactive Concept Explorer Dialog */}
+          {exploringConceptId && (
+            <ConceptExplorer
+              conceptId={exploringConceptId}
+              onClose={() => setExploringConceptId(null)}
+              onNavigateToConcept={(conceptId) => {
+                setExploringConceptId(conceptId);
+                // Find the concept to pass to the explorer
+                const concept = concepts.find((c: any) => c.id === conceptId);
+                if (concept) {
+                  setSelectedConcept(concept);
+                }
+              }}
+              onStartLearning={(conceptId) => {
+                setLearningConceptId(conceptId);
+                setExploringConceptId(null);
+              }}
+            />
+          )}
+          
+          {/* Learning Session Dialog */}
+          {learningConceptId && (
+            <ConceptDetails 
+              concept={concepts.find((c: any) => c.id === learningConceptId)}
+              onClose={() => setLearningConceptId(null)}
+              updateProgress={(data) => {
+                // This callback gets triggered when learning session is completed
+                // The data contains comprehension and practice scores
+                console.log("Learning progress updated:", data);
+                setLearningConceptId(null);
+              }}
+            />
+          )}
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-neutral-100 dark:bg-gray-800 p-4 rounded-lg">
