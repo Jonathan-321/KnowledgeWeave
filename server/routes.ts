@@ -478,12 +478,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get all concept connections where this concept is either source or target
       const conceptConnections = await storage.getAllConceptConnections();
       const relatedConnections = conceptConnections.filter(conn => 
-        conn.sourceConceptId === conceptId || conn.targetConceptId === conceptId
+        conn.sourceId === conceptId || conn.targetId === conceptId
       );
       
       // Get the IDs of related concepts
       const relatedConceptIds = relatedConnections.map(conn => 
-        conn.sourceConceptId === conceptId ? conn.targetConceptId : conn.sourceConceptId
+        conn.sourceId === conceptId ? conn.targetId : conn.sourceId
       );
       
       // Get the related concepts
