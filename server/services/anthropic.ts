@@ -116,26 +116,64 @@ export async function generateInsights(concepts: Concept[]): Promise<any[]> {
 }
 
 /**
- * Generate quiz questions for a concept
+ * Generate adaptive quiz questions for a concept with difficulty adjusted based on learning progress
  */
 export async function generateQuizQuestions(
   concept: Concept,
+  learningProgress?: any,
   relatedDocuments: any[] = [],
   questionCount: number = 3
 ): Promise<QuizQuestion[]> {
   try {
+    // Determine difficulty level based on learning progress
+    let difficulty = "medium";
+    let focusAreas = [];
+    
+    if (learningProgress) {
+      // Adjust difficulty based on comprehension score
+      if (learningProgress.comprehension < 40) {
+        difficulty = "basic";
+      } else if (learningProgress.comprehension > 75) {
+        difficulty = "advanced";
+      }
+      
+      // Add focus on areas that need improvement
+      if (learningProgress.reviewCount > 2 && learningProgress.comprehension < 60) {
+        focusAreas.push("fundamentals");
+      }
+    }
+    
+    // Create adaptive system prompt
+    const systemPrompt = `You are an expert educational content creator who specializes in adaptive learning.
+    
+    Create ${difficulty}-level quiz questions that adapt to a learner's current understanding.
+    ${focusAreas.length > 0 ? `Focus especially on: ${focusAreas.join(", ")}` : ""}
+    
+    For basic level: Focus on core definitions and foundational principles.
+    For medium level: Include application of concepts and some analysis.
+    For advanced level: Focus on synthesis, evaluation and connecting with other concepts.
+    
+    Your responses must be valid JSON arrays with no extra text.`;
+    
     const prompt = `
-      Generate ${questionCount} quiz questions for learning about "${concept.name}".
+      Generate ${questionCount} adaptive quiz questions for learning about "${concept.name}" at ${difficulty} difficulty.
       
       Concept description: ${concept.description}
       
       ${relatedDocuments.length > 0 ? `Related document information: ${JSON.stringify(relatedDocuments)}` : ''}
+      ${learningProgress ? `Current learner stats:
+        - Comprehension score: ${learningProgress.comprehension}/100
+        - Times reviewed: ${learningProgress.reviewCount || 0}
+        - Last review: ${learningProgress.lastReviewDate || 'Never'}` 
+        : 'No prior learning history available'}
       
       For each question:
-      1. Create a challenging but fair multiple-choice question testing understanding of this concept
+      1. Create a question appropriate for ${difficulty} difficulty level
       2. Provide 4 possible answers with only one correct option
-      3. The correct answer should be at different positions for different questions (don't always make it the first option)
-      4. Include a detailed explanation of why the correct answer is right and others are wrong
+      3. The correct answer should be at different positions
+      4. Include a detailed explanation of why the correct answer is right
+      5. Add a "difficulty" field marking this as "${difficulty}"
+      6. Add a "conceptArea" field indicating what specific aspect of ${concept.name} this tests
       
       Return in JSON format with this structure:
       [
@@ -143,7 +181,9 @@ export async function generateQuizQuestions(
           "question": "The question text",
           "options": ["Option A", "Option B", "Option C", "Option D"],
           "correctAnswer": 0, // Index of correct answer (0-3)
-          "explanation": "Explanation of the correct answer and why others are incorrect"
+          "explanation": "Explanation of the correct answer and why others are incorrect",
+          "difficulty": "${difficulty}", // "basic", "medium", or "advanced"
+          "conceptArea": "The specific area of the concept being tested"
         },
         // More questions...
       ]
@@ -152,7 +192,7 @@ export async function generateQuizQuestions(
     const response = await anthropic.messages.create({
       model: "claude-3-7-sonnet-20250219",
       max_tokens: 2000,
-      system: "You are an expert educational content creator specializing in creating quiz questions for advanced learning. Your responses must be valid JSON arrays with no extra text.",
+      system: systemPrompt,
       messages: [{ role: "user", content: prompt }],
     });
 
