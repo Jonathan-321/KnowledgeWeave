@@ -7,7 +7,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { History, Zap, Plus, Brain, LightbulbIcon } from "lucide-react";
+import { History, Zap, Plus, Brain, Lightbulb } from "lucide-react";
 import KnowledgeGraph from "@/components/KnowledgeGraph";
 import InsightCard from "@/components/InsightCard";
 import ProgressBar from "@/components/ProgressBar";
@@ -80,27 +80,36 @@ export default function Home() {
   const conceptProgress = learningProgress.slice(0, 2);
 
   return (
-    <div className="flex-1 p-6">
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Your Knowledge Graph</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Visualizing connections between your learning materials
-              </p>
+    <div className="flex-1 p-6 flex relative">
+      <div className={`flex-1 ${showTipsSidebar ? 'mr-80' : ''}`}>
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Your Knowledge Graph</h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Visualizing connections between your learning materials
+                </p>
+              </div>
+              <div className="mt-4 md:mt-0 flex space-x-2">
+                <Button 
+                  variant="outline" 
+                  className={showTipsSidebar ? "bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300" : ""}
+                  onClick={() => setShowTipsSidebar(!showTipsSidebar)}
+                >
+                  <Lightbulb className="mr-2" size={16} />
+                  <span>Learning Tips</span>
+                </Button>
+                <Button variant="outline">
+                  <History className="mr-2" size={16} />
+                  <span>History</span>
+                </Button>
+                <Button>
+                  <Zap className="mr-2" size={16} />
+                  <span>Generate Insights</span>
+                </Button>
+              </div>
             </div>
-            <div className="mt-4 md:mt-0 flex space-x-2">
-              <Button variant="outline">
-                <History className="mr-2" size={16} />
-                <span>History</span>
-              </Button>
-              <Button>
-                <Zap className="mr-2" size={16} />
-                <span>Generate Insights</span>
-              </Button>
-            </div>
-          </div>
           
           {/* Breadcrumb Navigation for interactive topic drill-down */}
           {breadcrumbPath.length > 0 && (
@@ -304,6 +313,15 @@ export default function Home() {
           </Button>
         </CardFooter>
       </Card>
+      </div>
+      
+      {/* Contextual Learning Tips Sidebar */}
+      {showTipsSidebar && (
+        <LearningTipsSidebar 
+          conceptId={exploringConceptId}
+          onClose={() => setShowTipsSidebar(false)}
+        />
+      )}
     </div>
   );
 }

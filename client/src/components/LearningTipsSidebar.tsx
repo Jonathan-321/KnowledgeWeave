@@ -3,11 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { 
-  LightbulbIcon, 
-  BookOpenIcon, 
-  BrainIcon, 
-  ChevronRightIcon, 
-  XIcon 
+  Lightbulb, 
+  BookOpen, 
+  Brain, 
+  ChevronRight, 
+  X 
 } from "lucide-react";
 import { Concept } from "@shared/schema";
 
@@ -91,11 +91,11 @@ export default function LearningTipsSidebar({ conceptId, onClose }: LearningTips
     <div className="h-full flex flex-col border-l border-gray-200 dark:border-gray-800 w-80 p-4 overflow-auto bg-gray-50 dark:bg-gray-900">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-medium flex items-center">
-          <LightbulbIcon size={18} className="text-yellow-500 mr-2" />
+          <Lightbulb size={18} className="text-yellow-500 mr-2" />
           <span>Learning Tips</span>
         </h2>
         <Button variant="ghost" size="sm" onClick={onClose}>
-          <XIcon size={16} />
+          <X size={16} />
         </Button>
       </div>
       
