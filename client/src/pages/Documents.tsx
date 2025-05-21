@@ -111,7 +111,12 @@ export default function Documents() {
             ) : filteredDocuments.length === 0 ? (
               <div className="border border-dashed border-neutral-200 dark:border-gray-700 rounded-lg p-8 text-center">
                 <p className="text-gray-500 dark:text-gray-400 mb-4">No documents found</p>
-                <FileDropZone />
+                <div className="mb-6">
+                  <FileDropZone />
+                  <p className="text-sm text-gray-500 mt-4">
+                    After uploading, your document will be processed and concepts will be automatically extracted to build your knowledge graph.
+                  </p>
+                </div>
               </div>
             ) : (
               <div className={

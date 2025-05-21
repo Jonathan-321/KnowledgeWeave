@@ -22,7 +22,18 @@ export default function FileDropZone() {
       formData.append("title", file.name);
       formData.append("type", getDocumentType(file.name));
       
-      const response = await apiRequest("POST", "/api/documents", formData);
+      // Use direct fetch to bypass any middleware issues
+      const response = await fetch("/api/documents", {
+        method: "POST",
+        body: formData,
+        credentials: "include"
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Upload failed: ${response.status} ${errorText}`);
+      }
+      
       return response.json();
     },
     onSuccess: () => {
