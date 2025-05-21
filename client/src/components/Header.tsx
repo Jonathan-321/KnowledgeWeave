@@ -20,7 +20,8 @@ export default function Header({ toggleSidebar }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navLinks = [
-    { label: "Knowledge Graph", href: "/" },
+    { label: "Home", href: "/" },
+    { label: "Knowledge Graph", href: "/knowledge" },
     { label: "Documents", href: "/documents" },
     { label: "Learning", href: "/learning" },
     { label: "Insights", href: "/insights" },
