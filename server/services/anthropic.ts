@@ -8,6 +8,38 @@ const anthropic = new Anthropic({
 });
 
 /**
+ * Extract JSON from Claude's response, handling different response types
+ */
+function extractJsonFromResponse(response: any): any {
+  try {
+    if (!response.content || response.content.length === 0) {
+      return null;
+    }
+    
+    const firstContent = response.content[0];
+    if (firstContent.type !== 'text') {
+      return null;
+    }
+    
+    const text = firstContent.text;
+    
+    // First try to extract JSON array pattern
+    const jsonPattern = /\[\s*\{[\s\S]*\}\s*\]/;
+    const jsonMatch = text.match(jsonPattern);
+    
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+    
+    // If that fails, try to parse the whole response as JSON
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Error extracting JSON from response:", error);
+    return null;
+  }
+}
+
+/**
  * Extract concepts from text
  */
 export async function extractConcepts(text: string): Promise<Partial<Concept>[]> {
@@ -33,16 +65,8 @@ export async function extractConcepts(text: string): Promise<Partial<Concept>[]>
       messages: [{ role: "user", content: prompt }],
     });
 
-    // Extract JSON from Claude's response
-    const content = response.content[0].text;
-    const jsonMatch = content.match(/\[\s*\{.*\}\s*\]/s);
-    
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
-    
-    // Fallback if no JSON array found
-    return JSON.parse(content);
+    const concepts = extractJsonFromResponse(response);
+    return concepts || [];
   } catch (error: any) {
     console.error("Error extracting concepts:", error.message);
     return [];
@@ -83,16 +107,8 @@ export async function generateInsights(concepts: Concept[]): Promise<any[]> {
       messages: [{ role: "user", content: prompt }],
     });
 
-    // Extract JSON from Claude's response
-    const content = response.content[0].text;
-    const jsonMatch = content.match(/\[\s*\{.*\}\s*\]/s);
-    
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
-    
-    // Fallback if no JSON array found
-    return JSON.parse(content);
+    const insights = extractJsonFromResponse(response);
+    return insights || [];
   } catch (error: any) {
     console.error("Error generating insights:", error.message);
     return [];
@@ -140,16 +156,8 @@ export async function generateQuizQuestions(
       messages: [{ role: "user", content: prompt }],
     });
 
-    // Extract JSON from Claude's response
-    const content = response.content[0].text;
-    const jsonMatch = content.match(/\[\s*\{.*\}\s*\]/s);
-    
-    if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
-    }
-    
-    // Fallback if no JSON array found
-    return JSON.parse(content);
+    const questions = extractJsonFromResponse(response);
+    return questions || [];
   } catch (error: any) {
     console.error("Error generating quiz questions:", error.message);
     return [];

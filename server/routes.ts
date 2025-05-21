@@ -446,7 +446,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Quiz generation API
+  // Quiz generation API for spaced repetition learning
   app.get("/api/quiz/:conceptId", async (req, res) => {
     try {
       const conceptId = parseInt(req.params.conceptId);
@@ -468,9 +468,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Generate quiz questions
-      const quizQuestions = await generateQuizQuestions(concept, documents);
-      res.json(quizQuestions);
+      // Generate quiz questions using Anthropic API
+      const { generateQuizQuestions } = require('./services/spaceRepetition');
+      const questions = await generateQuizQuestions(concept, documents);
+      
+      // Check if the user has existing learning progress for this concept
+      let progress = await storage.getLearningProgressByConceptId(conceptId);
+      
+      // If no progress exists, create initial progress
+      if (!progress) {
+        progress = await storage.createLearningProgress({
+          conceptId,
+          userId: 1,
+          comprehension: 0,
+          practice: 0,
+          lastReviewed: new Date(),
+          nextReviewDate: new Date()
+        });
+      }
+      
+      res.json(questions);
     } catch (error: any) {
       res.status(500).json({ message: "Error generating quiz", error: error.message });
     }

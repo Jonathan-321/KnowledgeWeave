@@ -1,28 +1,40 @@
+import { cn } from "@/lib/utils";
+
 interface ProgressBarProps {
   value: number;
-  max?: number;
-  color?: 'blue' | 'green' | 'red' | 'yellow' | 'purple';
+  color?: "green" | "blue" | "purple" | "red" | "yellow";
+  className?: string;
+  size?: number;
 }
 
-export default function ProgressBar({ value, max = 100, color = 'blue' }: ProgressBarProps) {
-  // Ensure value is between 0 and max
-  const normalizedValue = Math.min(Math.max(0, value), max);
-  const percentage = (normalizedValue / max) * 100;
+export default function ProgressBar({ 
+  value, 
+  color = "blue", 
+  className,
+  size
+}: ProgressBarProps) {
+  // Ensure value is between 0 and 100
+  const normalizedValue = Math.min(Math.max(value, 0), 100);
   
-  // Map color names to tailwind classes
+  // Map colors to Tailwind classes
   const colorMap = {
-    blue: 'bg-blue-500',
-    green: 'bg-green-500',
-    red: 'bg-red-500',
-    yellow: 'bg-yellow-500',
-    purple: 'bg-purple-500',
+    green: "bg-green-500 dark:bg-green-600",
+    blue: "bg-blue-500 dark:bg-blue-600",
+    purple: "bg-purple-500 dark:bg-purple-600",
+    red: "bg-red-500 dark:bg-red-600",
+    yellow: "bg-yellow-500 dark:bg-yellow-600"
   };
   
   return (
-    <div className="w-full bg-neutral-200 dark:bg-gray-700 rounded-full h-1.5">
+    <div 
+      className={cn(
+        "w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden",
+        className
+      )}
+    >
       <div 
-        className={`${colorMap[color]} h-1.5 rounded-full`} 
-        style={{ width: `${percentage}%` }}
+        className={cn(colorMap[color], "h-full rounded-full transition-all duration-300")}
+        style={{ width: `${normalizedValue}%` }}
       />
     </div>
   );
