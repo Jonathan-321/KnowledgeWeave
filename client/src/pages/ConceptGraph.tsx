@@ -49,7 +49,10 @@ export default function ConceptGraph() {
       {/* Knowledge Graph Visualization */}
       {!showConceptView && (
         <div className="border rounded-lg p-4 min-h-[500px] bg-background">
-          <KnowledgeGraph onSelectConcept={handleSelectConcept} />
+          <KnowledgeGraph 
+            onSelectConcept={handleSelectConcept}
+            redirectToLearning={true}
+          />
         </div>
       )}
 
