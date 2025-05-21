@@ -459,12 +459,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      // Generate quiz questions using Anthropic API
-      const { generateQuizQuestions } = require('./services/spaceRepetition');
-      const questions = await generateQuizQuestions(concept, documents);
-      
-      // Check if the user has existing learning progress for this concept
+      // Get learning progress to adapt difficulty based on user's level
       let progress = await storage.getLearningProgressByConceptId(conceptId);
+            
+      // Format documents to provide relevant context
+      const documentContext = documents.map(doc => ({
+        id: doc.id,
+        title: doc.title,
+        content: doc.content.substring(0, 300) // Shorter excerpt for prompt
+      }));
       
       // If no progress exists, create initial progress
       if (!progress) {
