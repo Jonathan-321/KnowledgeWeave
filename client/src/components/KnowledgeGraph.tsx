@@ -9,9 +9,10 @@ import { createForceSimulation } from "@/lib/d3-graph";
 
 interface KnowledgeGraphProps {
   onSelectConcept: (concept: Concept) => void;
+  redirectToLearning?: boolean;
 }
 
-export default function KnowledgeGraph({ onSelectConcept }: KnowledgeGraphProps) {
+export default function KnowledgeGraph({ onSelectConcept, redirectToLearning = false }: KnowledgeGraphProps) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -67,6 +68,12 @@ export default function KnowledgeGraph({ onSelectConcept }: KnowledgeGraphProps)
         
         // Trigger the parent component's handler
         onSelectConcept(concept);
+        
+        // If redirectToLearning is true, we'll navigate to the learning page
+        if (redirectToLearning) {
+          // Using window.location for direct navigation
+          window.location.href = `/learning?conceptId=${concept.id}`;
+        }
       } else {
         console.error("Concept not found in available concepts:", node.id);
       }
