@@ -21,6 +21,7 @@ function Router() {
         <Route path="/learning" component={Learning} />
         <Route path="/insights" component={Insights} />
         <Route path="/knowledge" component={ConceptGraph} />
+        <Route path="/graph" component={ConceptGraph} />
         <Route component={NotFound} />
       </Switch>
     </MainLayout>

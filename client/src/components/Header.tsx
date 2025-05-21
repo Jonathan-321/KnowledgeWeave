@@ -21,7 +21,7 @@ export default function Header({ toggleSidebar }: HeaderProps) {
 
   const navLinks = [
     { label: "Home", href: "/" },
-    { label: "Knowledge Graph", href: "/knowledge" },
+    { label: "Knowledge Graph", href: "/graph" },
     { label: "Documents", href: "/documents" },
     { label: "Learning", href: "/learning" },
     { label: "Insights", href: "/insights" },
