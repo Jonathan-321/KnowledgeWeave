@@ -112,7 +112,7 @@ export default function LearningTipsSidebar({ conceptId, onClose }: LearningTips
         <Card className="mb-4 border-yellow-200 dark:border-yellow-900 bg-yellow-50 dark:bg-yellow-900/20">
           <CardContent className="p-3">
             <div className="flex">
-              <BrainIcon size={18} className="text-yellow-600 dark:text-yellow-400 mt-1 mr-2 flex-shrink-0" />
+              <Brain size={18} className="text-yellow-600 dark:text-yellow-400 mt-1 mr-2 flex-shrink-0" />
               <p className="text-sm text-yellow-700 dark:text-yellow-300">{reviewTip}</p>
             </div>
           </CardContent>
@@ -124,7 +124,7 @@ export default function LearningTipsSidebar({ conceptId, onClose }: LearningTips
           <Card key={index} className="border-gray-200 dark:border-gray-700">
             <CardContent className="p-3">
               <div className="flex">
-                <LightbulbIcon size={18} className="text-amber-500 mt-1 mr-2 flex-shrink-0" />
+                <Lightbulb size={18} className="text-amber-500 mt-1 mr-2 flex-shrink-0" />
                 <p className="text-sm">{tip}</p>
               </div>
             </CardContent>
@@ -135,7 +135,7 @@ export default function LearningTipsSidebar({ conceptId, onClose }: LearningTips
       <Card className="mt-auto">
         <CardHeader className="py-3 px-4">
           <CardTitle className="text-sm font-medium flex items-center">
-            <BookOpenIcon size={16} className="mr-2" />
+            <BookOpen size={16} className="mr-2" />
             Learning Resources
           </CardTitle>
         </CardHeader>
@@ -147,7 +147,7 @@ export default function LearningTipsSidebar({ conceptId, onClose }: LearningTips
                 className="flex items-center text-blue-600 dark:text-blue-400 hover:underline"
               >
                 <span>Using spaced repetition effectively</span>
-                <ChevronRightIcon size={14} className="ml-1" />
+                <ChevronRight size={14} className="ml-1" />
               </a>
             </li>
             <li>
@@ -156,7 +156,7 @@ export default function LearningTipsSidebar({ conceptId, onClose }: LearningTips
                 className="flex items-center text-blue-600 dark:text-blue-400 hover:underline"
               >
                 <span>Knowledge graph learning techniques</span>
-                <ChevronRightIcon size={14} className="ml-1" />
+                <ChevronRight size={14} className="ml-1" />
               </a>
             </li>
             {concept && (
@@ -166,7 +166,7 @@ export default function LearningTipsSidebar({ conceptId, onClose }: LearningTips
                   className="flex items-center text-blue-600 dark:text-blue-400 hover:underline"
                 >
                   <span>Related resources for {concept.name}</span>
-                  <ChevronRightIcon size={14} className="ml-1" />
+                  <ChevronRight size={14} className="ml-1" />
                 </a>
               </li>
             )}
