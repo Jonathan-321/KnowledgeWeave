@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { 
@@ -7,19 +7,48 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { History, Zap, Plus, Brain } from "lucide-react";
+import { History, Zap, Plus, Brain, LightbulbIcon } from "lucide-react";
 import KnowledgeGraph from "@/components/KnowledgeGraph";
 import InsightCard from "@/components/InsightCard";
 import ProgressBar from "@/components/ProgressBar";
 import ConceptExplorer from "@/components/ConceptExplorer";
 import ConceptDetails from "@/components/ConceptDetails";
+import BreadcrumbNavigation from "@/components/BreadcrumbNavigation";
+import LearningTipsSidebar from "@/components/LearningTipsSidebar";
 import { Concept } from "@shared/schema";
 
 export default function Home() {
   const [selectedConcept, setSelectedConcept] = useState<Concept | null>(null);
   const [exploringConceptId, setExploringConceptId] = useState<number | null>(null);
   const [learningConceptId, setLearningConceptId] = useState<number | null>(null);
+  const [breadcrumbPath, setBreadcrumbPath] = useState<Array<{id: number, label: string}>>([]);
+  const [showTipsSidebar, setShowTipsSidebar] = useState<boolean>(false);
   const [, navigate] = useLocation();
+
+  // Add an effect to manage breadcrumb path when exploring concepts
+  useEffect(() => {
+    if (exploringConceptId) {
+      const concept = concepts?.find((c: any) => c.id === exploringConceptId);
+      if (concept) {
+        // Check if this concept is already in the breadcrumb path
+        const existingIndex = breadcrumbPath.findIndex(item => item.id === exploringConceptId);
+        
+        if (existingIndex >= 0) {
+          // If concept exists in path, truncate the path up to this concept
+          setBreadcrumbPath(breadcrumbPath.slice(0, existingIndex + 1));
+        } else {
+          // Otherwise add it to the path
+          setBreadcrumbPath([...breadcrumbPath, { 
+            id: exploringConceptId, 
+            label: concept.name 
+          }]);
+        }
+      }
+    } else {
+      // Clear breadcrumb path if we're at the root
+      setBreadcrumbPath([]);
+    }
+  }, [exploringConceptId]);
 
   const { data: documents = [] } = useQuery({
     queryKey: ["/api/documents"],
@@ -54,7 +83,7 @@ export default function Home() {
     <div className="flex-1 p-6">
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Your Knowledge Graph</h1>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -72,6 +101,22 @@ export default function Home() {
               </Button>
             </div>
           </div>
+          
+          {/* Breadcrumb Navigation for interactive topic drill-down */}
+          {breadcrumbPath.length > 0 && (
+            <BreadcrumbNavigation 
+              items={breadcrumbPath}
+              onNavigate={(conceptId) => {
+                if (conceptId === null) {
+                  // Navigate to root level
+                  setExploringConceptId(null);
+                } else {
+                  // Navigate to specific concept in breadcrumb
+                  setExploringConceptId(conceptId);
+                }
+              }}
+            />
+          )}
           
           <KnowledgeGraph onSelectConcept={(concept) => {
             setSelectedConcept(concept);

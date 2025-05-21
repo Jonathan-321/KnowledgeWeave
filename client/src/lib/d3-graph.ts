@@ -85,16 +85,39 @@ export function createForceSimulation(
 
   svg.call(zoom as any);
 
-  // Create link elements
+  // Create link elements with animated paths
   const linkElements = g.append("g")
-    .selectAll("line")
+    .selectAll("path")
     .data(processedLinks)
     .enter()
-    .append("line")
+    .append("path")
     .attr("class", "graph-link")
     .attr("stroke", d => d.color as string)
     .attr("stroke-width", d => d.width as number)
-    .attr("opacity", 0.6);
+    .attr("fill", "none")
+    .attr("opacity", 0.6)
+    .attr("stroke-dasharray", "5,5")
+    .attr("stroke-dashoffset", 0)
+    .each(function(d: any) {
+      // Add animated flow effect for stronger connections
+      if (d.strength === "strong" || d.strength === "moderate") {
+        d3.select(this)
+          .attr("stroke-dasharray", d.strength === "strong" ? "6,3" : "4,4")
+          .transition()
+          .duration(20000)
+          .ease(d3.easeLinear)
+          .attr("stroke-dashoffset", 200)
+          .on("end", function repeat() {
+            d3.select(this)
+              .attr("stroke-dashoffset", 0)
+              .transition()
+              .duration(20000)
+              .ease(d3.easeLinear)
+              .attr("stroke-dashoffset", 200)
+              .on("end", repeat);
+          });
+      }
+    });
 
   // Create node elements
   const nodeElements = g.append("g")
@@ -153,11 +176,23 @@ export function createForceSimulation(
     .force("collision", d3.forceCollide().radius(d => (d.radius as number) + 10))
     .on("tick", () => {
       // Update positions on each tick
-      linkElements
-        .attr("x1", d => (d.source as SimulationNode).x || 0)
-        .attr("y1", d => (d.source as SimulationNode).y || 0)
-        .attr("x2", d => (d.target as SimulationNode).x || 0)
-        .attr("y2", d => (d.target as SimulationNode).y || 0);
+      // For animated paths, we'll use a curve to make them look more natural
+      linkElements.attr("d", (d: any) => {
+        const sourceX = (d.source as SimulationNode).x || 0;
+        const sourceY = (d.source as SimulationNode).y || 0;
+        const targetX = (d.target as SimulationNode).x || 0;
+        const targetY = (d.target as SimulationNode).y || 0;
+        
+        // Calculate a midpoint with a slight curve
+        const dx = targetX - sourceX;
+        const dy = targetY - sourceY;
+        const dr = Math.sqrt(dx * dx + dy * dy) * 1.2;
+        
+        // Stronger connections have straighter lines
+        const curvature = d.strength === "strong" ? 0 : (d.strength === "moderate" ? 1 : 1.5);
+        
+        return `M${sourceX},${sourceY}A${dr * curvature},${dr * curvature} 0 0,1 ${targetX},${targetY}`;
+      });
 
       nodeElements
         .attr("cx", d => d.x || 0)
