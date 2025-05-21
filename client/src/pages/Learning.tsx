@@ -1,15 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AdaptiveQuiz } from '@/components/AdaptiveQuiz';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Brain, Calendar, BookOpen, BarChart } from 'lucide-react';
+import { Brain, Calendar, BookOpen, BarChart, ArrowLeft } from 'lucide-react';
 
 export default function Learning() {
   const [selectedConceptId, setSelectedConceptId] = useState<number | null>(null);
+  const [location, navigate] = useLocation();
+  
+  // Check URL parameters for conceptId on component mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const conceptId = params.get('conceptId');
+    
+    if (conceptId && !isNaN(parseInt(conceptId))) {
+      setSelectedConceptId(parseInt(conceptId));
+    }
+  }, []);
   
   // Fetch all concepts
   const { data: concepts, isLoading: isLoadingConcepts } = useQuery({
