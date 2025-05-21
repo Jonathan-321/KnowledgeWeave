@@ -437,7 +437,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Quiz generation API for spaced repetition learning
+  // Adaptive quiz generation API for enhanced spaced repetition learning
   app.get("/api/quiz/:conceptId", async (req, res) => {
     try {
       const conceptId = parseInt(req.params.conceptId);
@@ -481,7 +481,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      res.json(questions);
+      // Generate adaptive quiz questions using Claude AI
+      const { generateQuizQuestions } = await import('./services/anthropic'); 
+      const questions = await generateQuizQuestions(
+        concept,
+        progress,
+        documentContext
+      );
+      
+      res.json({ questions, progress });
     } catch (error: any) {
       res.status(500).json({ message: "Error generating quiz", error: error.message });
     }
