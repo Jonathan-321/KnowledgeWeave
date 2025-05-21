@@ -9,6 +9,9 @@
  * 4. Concept relationships in the knowledge graph
  */
 
+import { storage } from "../storage";
+import { Concept, LearningProgress, InsertLearningProgress } from "@shared/schema";
+
 // Define QuizQuestion interface for use in anthropic.ts
 export interface QuizQuestion {
   question: string;
@@ -19,10 +22,6 @@ export interface QuizQuestion {
   conceptArea?: string;
   type?: "multiple_choice" | "true_false" | "short_answer";
 }
- */
-
-import { storage } from "../storage";
-import { Concept, LearningProgress, InsertLearningProgress } from "@shared/schema";
 
 // Quality of recall ratings (1-5)
 // 1: Complete blackout - complete failure to recall
@@ -60,7 +59,7 @@ export async function calculateNextReview(data: SpacedRepetitionData): Promise<{
   // Retrieve current learning progress if it exists
   const currentProgress = await storage.getLearningProgressByConceptId(data.conceptId);
   
-  // Get concept to check complexity and relationships
+  // Get concept to check complexity
   const concept = await storage.getConcept(data.conceptId);
   if (!concept) {
     throw new Error("Concept not found");
@@ -70,7 +69,8 @@ export async function calculateNextReview(data: SpacedRepetitionData): Promise<{
   const quality = data.quality;
   const previousInterval = data.previousInterval || currentProgress?.interval || 0;
   const previousEaseFactor = data.previousEaseFactor || currentProgress?.easeFactor || DEFAULT_EASE_FACTOR;
-  const complexity = data.complexity || concept.complexity || 5; // Default to medium complexity
+  // Default to medium complexity (5) if not provided
+  const complexity = data.complexity || concept.complexity || 5;
   
   // Normalize complexity to a factor between 0.8 and 1.2
   const complexityFactor = 1 + COMPLEXITY_WEIGHT * ((complexity - 5) / 10);
@@ -134,10 +134,10 @@ async function calculateRelationshipBoost(conceptId: number): Promise<number> {
   
   // Find all directly connected concepts
   allConnections.forEach(connection => {
-    if (connection.sourceConceptId === conceptId) {
-      relatedConceptIds.push(connection.targetConceptId);
-    } else if (connection.targetConceptId === conceptId) {
-      relatedConceptIds.push(connection.sourceConceptId);
+    if (connection.sourceId === conceptId) {
+      relatedConceptIds.push(connection.targetId);
+    } else if (connection.targetId === conceptId) {
+      relatedConceptIds.push(connection.sourceId);
     }
   });
   
@@ -156,8 +156,9 @@ async function calculateRelationshipBoost(conceptId: number): Promise<number> {
   }
   
   // Calculate average comprehension of related concepts
+  // Handle null values with nullish coalescing
   const avgComprehension = relatedProgress.reduce(
-    (sum, progress) => sum + progress.comprehension, 
+    (sum, progress) => sum + (progress.comprehension ?? 0),
     0
   ) / relatedProgress.length;
   
@@ -187,7 +188,7 @@ export async function updateLearningProgress(
   
   // Calculate new comprehension score - factor in previous score if it exists
   let comprehensionScore;
-  if (currentProgress) {
+  if (currentProgress && currentProgress.comprehension !== null) {
     // Weight previous score and new quality
     comprehensionScore = Math.round(
       currentProgress.comprehension * 0.7 + (quality * 20) * 0.3
@@ -211,16 +212,19 @@ export async function updateLearningProgress(
   
   const { nextReviewDate, interval, easeFactor } = await calculateNextReview(spacedRepetitionData);
   
+  // Handle review count and study time safely
+  const reviewCount = (currentProgress?.reviewCount || 0) + 1;
+  const totalStudyTime = (currentProgress?.totalStudyTime || 0) + duration;
+  
   // Prepare the learning progress data
   const progressData: Partial<LearningProgress> = {
     conceptId,
-    conceptName: concept.name,
     comprehension: comprehensionScore,
     practice: practiceScore,
-    lastReviewDate: new Date(),
+    lastReviewed: new Date(),
     nextReviewDate,
-    reviewCount: (currentProgress?.reviewCount || 0) + 1,
-    totalStudyTime: (currentProgress?.totalStudyTime || 0) + duration,
+    reviewCount,
+    totalStudyTime,
     interval,
     easeFactor
   };
@@ -302,7 +306,7 @@ export async function generateLearningSchedule(userId: number): Promise<any[]> {
         reviewDate: new Date(), // Recommend starting today
         status: "not_started"
       });
-    } else if (progress.nextReviewDate <= new Date()) {
+    } else if (progress.nextReviewDate && progress.nextReviewDate <= new Date()) {
       // Due for review
       schedule.push({
         conceptId: concept.id,
@@ -337,6 +341,11 @@ export async function generateLearningSchedule(userId: number): Promise<any[]> {
   return schedule.sort((a, b) => {
     if (a.priority === "high" && b.priority !== "high") return -1;
     if (a.priority !== "high" && b.priority === "high") return 1;
-    return new Date(a.reviewDate).getTime() - new Date(b.reviewDate).getTime();
+    
+    // Handle possible null dates
+    const dateA = a.reviewDate ? new Date(a.reviewDate).getTime() : Date.now();
+    const dateB = b.reviewDate ? new Date(b.reviewDate).getTime() : Date.now();
+    
+    return dateA - dateB;
   });
 }

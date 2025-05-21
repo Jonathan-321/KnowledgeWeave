@@ -37,6 +37,7 @@ export const concepts = pgTable("concepts", {
   description: text("description").notNull(),
   tags: text("tags").array(),
   userId: integer("user_id"),
+  complexity: integer("complexity").default(5), // 1-10 scale of concept difficulty
 });
 
 export const insertConceptSchema = createInsertSchema(concepts).omit({
@@ -76,6 +77,11 @@ export const learningProgress = pgTable("learning_progress", {
   lastReviewed: timestamp("last_reviewed"),
   nextReviewDate: timestamp("next_review_date"),
   userId: integer("user_id"),
+  // Enhanced spaced repetition fields
+  interval: integer("interval").default(0), // Current interval in days
+  easeFactor: integer("ease_factor").default(250), // Ease factor * 100 (stored as integer)
+  reviewCount: integer("review_count").default(0), // Number of reviews completed
+  totalStudyTime: integer("total_study_time").default(0), // Total study time in seconds
 });
 
 export const insertLearningProgressSchema = createInsertSchema(learningProgress).omit({

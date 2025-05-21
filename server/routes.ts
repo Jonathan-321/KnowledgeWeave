@@ -417,30 +417,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       updates.lastReviewed = new Date();
       
       // Use our enhanced spaced repetition algorithm
-      const { calculatePerformanceRating, calculateNextReview } = require('./services/spaceRepetition');
+      const { updateLearningProgress } = await import('./services/spaceRepetition');
       
-      // Get current values
-      const progressComprehension = req.body.comprehension !== undefined ? req.body.comprehension : (progress.comprehension || 0);
-      const progressPractice = req.body.practice !== undefined ? req.body.practice : (progress.practice || 0);
+      // Convert request body to input for enhanced algorithm
+      const quality = req.body.quality !== undefined ? req.body.quality : 3; // Default to medium quality
+      const duration = req.body.duration !== undefined ? req.body.duration : 60; // Default to 1 minute
       
-      // Calculate performance rating on 0-5 scale based on comprehension and practice scores
-      const performanceRating = calculatePerformanceRating(progressComprehension, progressPractice);
-      
-      // Calculate days since last review (or use 0 for first review)
-      const lastReviewDate = progress.lastReviewed ? new Date(progress.lastReviewed) : new Date();
-      const currentDate = new Date();
-      const daysSinceLastReview = Math.max(0, Math.floor((currentDate.getTime() - lastReviewDate.getTime()) / (24 * 60 * 60 * 1000)));
-      
-      // Calculate next review date using SuperMemo-2 algorithm
-      // This algorithm increases intervals based on performance rating
-      updates.nextReviewDate = calculateNextReview(
-        currentDate,
-        daysSinceLastReview || 0,
-        performanceRating
+      // Update learning progress with enhanced spaced repetition data
+      const updatedProgressData = await updateLearningProgress(
+        conceptId,
+        quality,
+        duration
       );
       
-      const updatedProgress = await storage.updateLearningProgress(progress.id, updates);
-      res.json(updatedProgress);
+      // Return the updated progress directly from our algorithm
+      return res.json(updatedProgressData);
     } catch (error: any) {
       res.status(500).json({ message: "Error updating learning progress", error: error.message });
     }
