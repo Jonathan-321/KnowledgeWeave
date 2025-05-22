@@ -493,6 +493,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Insights API
+  // Special endpoint to generate demo quantum computing concepts
+  app.post("/api/generate-quantum-concepts", async (req, res) => {
+    try {
+      console.log("Generating quantum computing demo concepts...");
+      
+      // Create demo document if it doesn't exist
+      let testDocument = (await storage.getAllDocuments()).find(d => d.title === "Quantum Computing Fundamentals");
+      
+      if (!testDocument) {
+        testDocument = await storage.createDocument({
+          title: "Quantum Computing Fundamentals",
+          description: "An overview of quantum computing concepts and principles",
+          type: "txt",
+          content: "Quantum computing is an emerging field that uses quantum mechanical phenomena to perform computations.",
+          fileSize: 1024,
+          pageCount: 5,
+          processed: true,
+          userId: 1
+        });
+        console.log("Created demo document:", testDocument.id);
+      }
+      
+      // Create quantum computing concepts
+      const quantumConcepts = [
+        {
+          name: "Quantum Computing",
+          description: "A type of computation that harnesses quantum mechanical phenomena like superposition and entanglement to perform operations on data.",
+          tags: ["computing", "physics", "quantum mechanics"]
+        },
+        {
+          name: "Qubits",
+          description: "The fundamental unit of quantum information, representing a two-state quantum system that can exist in superposition.",
+          tags: ["quantum", "information theory", "computation"]
+        },
+        {
+          name: "Quantum Entanglement",
+          description: "A quantum mechanical phenomenon where the quantum states of multiple particles become correlated, even when separated by large distances.",
+          tags: ["quantum physics", "particle physics", "non-locality"]
+        },
+        {
+          name: "Quantum Gates",
+          description: "The building blocks of quantum circuits that perform operations on qubits, analogous to classical logic gates.",
+          tags: ["quantum circuits", "computation", "logic"]
+        }
+      ];
+      
+      const conceptIds = [];
+      
+      // Create or find each concept
+      for (const concept of quantumConcepts) {
+        let conceptId;
+        const existingConcept = await storage.getConceptByName(concept.name);
+        
+        if (existingConcept) {
+          console.log(`Concept already exists: ${concept.name}`);
+          conceptId = existingConcept.id;
+        } else {
+          const newConcept = await storage.createConcept({
+            name: concept.name,
+            description: concept.description,
+            tags: concept.tags,
+            userId: 1
+          });
+          console.log(`Created concept: ${newConcept.name}`);
+          conceptId = newConcept.id;
+        }
+        
+        conceptIds.push(conceptId);
+        
+        // Create document-concept relationship
+        const docConcepts = await storage.getDocumentConceptsByConceptId(conceptId);
+        const existingDocConcept = docConcepts.find(dc => dc.documentId === testDocument.id);
+        
+        if (!existingDocConcept) {
+          await storage.createDocumentConcept({
+            documentId: testDocument.id,
+            conceptId: conceptId
+          });
+          console.log(`Connected concept ${conceptId} to document ${testDocument.id}`);
+        }
+      }
+      
+      // Create connections between concepts
+      if (conceptIds.length > 1) {
+        for (let i = 0; i < conceptIds.length; i++) {
+          for (let j = i + 1; j < conceptIds.length; j++) {
+            // Check if connection already exists
+            const connections = await storage.getAllConceptConnections();
+            const existingConnection = connections.find(conn => 
+              (conn.sourceId === conceptIds[i] && conn.targetId === conceptIds[j]) ||
+              (conn.sourceId === conceptIds[j] && conn.targetId === conceptIds[i])
+            );
+            
+            if (!existingConnection) {
+              await storage.createConceptConnection({
+                sourceId: conceptIds[i],
+                targetId: conceptIds[j],
+                strength: "moderate",
+                userId: 1
+              });
+              console.log(`Created connection between concepts ${conceptIds[i]} and ${conceptIds[j]}`);
+            }
+          }
+        }
+      }
+      
+      res.status(200).json({
+        success: true,
+        message: "Demo quantum computing concepts created successfully",
+        concepts: conceptIds
+      });
+    } catch (error) {
+      console.error("Error creating demo concepts:", error);
+      res.status(500).json({ message: "Error creating demo concepts", error });
+    }
+  });
+  
   app.get("/api/insights", async (req, res) => {
     try {
       const insights = await storage.getAllInsights();
