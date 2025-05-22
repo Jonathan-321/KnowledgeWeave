@@ -146,8 +146,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...parsedData.data,
         filePath: req.file.path,
       });
+      
+      // Send immediate success response to client
+      res.status(200).json({
+        id: document.id,
+        title: document.title,
+        message: "Document uploaded successfully and is being processed"
+      });
 
-      // Process document asynchronously
+      // Process document asynchronously in the background
       processDocument(document, req.file.path)
         .then(async (processedDoc) => {
           await storage.updateDocument(document.id, {
