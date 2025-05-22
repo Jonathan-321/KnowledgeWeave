@@ -25,7 +25,8 @@ export function createForceSimulation(
   links: GraphLink[],
   width: number,
   height: number,
-  onNodeClick: (node: GraphNode) => void
+  onNodeClick: (node: GraphNode) => void,
+  directNavigate: boolean = false
 ) {
   // Process nodes and links to add visual properties
   const processedNodes: SimulationNode[] = nodes.map(node => {

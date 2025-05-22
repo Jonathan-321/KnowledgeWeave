@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import KnowledgeGraph from '@/components/KnowledgeGraph';
-import ClickableKnowledgeGraph from '@/components/ClickableKnowledgeGraph';
+import InteractiveGraph from '@/components/InteractiveGraph';
 import ConceptDetailsPanel from '@/components/ConceptDetailsPanel';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
@@ -50,9 +50,7 @@ export default function ConceptGraph() {
       {/* Knowledge Graph Visualization */}
       {!showConceptView && (
         <div className="border rounded-lg p-4 min-h-[500px] bg-background">
-          <ClickableKnowledgeGraph 
-            onSelectConcept={handleSelectConcept}
-          />
+          <InteractiveGraph />
         </div>
       )}
 

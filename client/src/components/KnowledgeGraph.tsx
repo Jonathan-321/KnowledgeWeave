@@ -66,14 +66,11 @@ export default function KnowledgeGraph({ onSelectConcept, redirectToLearning = f
         // Log the concept that's being selected (for debugging)
         console.log("Selected concept:", concept);
         
+        // ALWAYS navigate to the learning page for this concept - direct approach
+        window.location.href = `/learning?conceptId=${concept.id}`;
+        
         // Trigger the parent component's handler
         onSelectConcept(concept);
-        
-        // If redirectToLearning is true, we'll navigate to the learning page
-        if (redirectToLearning) {
-          // Using window.location for direct navigation
-          window.location.href = `/learning?conceptId=${concept.id}`;
-        }
       } else {
         console.error("Concept not found in available concepts:", node.id);
       }
