@@ -1043,33 +1043,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Use our dedicated quizGenerator service
-      try {
-        const questions = await generateQuizQuestions(concept);
-        
-        res.json({ questions, progress });
-      } catch (error) {
-        console.error("Error generating quiz questions:", error);
-        
-        // Return basic fallback questions if quiz generator fails
-        const fallbackQuestions = [
-          {
-            question: `What is ${concept.name} primarily used for?`,
-            options: [
-              concept.description.split('.')[0],
-              "It has no practical applications",
-              "Only for theoretical research",
-              "None of the above"
-            ],
-            correctAnswer: 0,
-            explanation: `${concept.name} is primarily used for ${concept.description.split('.')[0]}.`,
-            difficulty: "basic",
-            conceptArea: concept.name
-          }
-        ];
-        
-        res.json({ questions: fallbackQuestions, progress });
-      }
+      // Generate sample quiz questions based on the concept
+      const sampleQuizQuestions = generateSampleQuizForConcept(concept);
+      res.json({ questions: sampleQuizQuestions, progress });
     } catch (error: any) {
       res.status(500).json({ message: "Error generating quiz", error: error.message });
     }
