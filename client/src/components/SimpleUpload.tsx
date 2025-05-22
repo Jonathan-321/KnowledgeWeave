@@ -22,10 +22,19 @@ export default function SimpleUpload() {
     try {
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("title", file.name);
-      formData.append("type", file.name.split('.').pop() || 'txt');
       
-      const response = await fetch("/api/documents", {
+      // Add document metadata as JSON
+      const metadata = {
+        title: file.name,
+        description: `Uploaded document: ${file.name}`,
+        type: file.name.split('.').pop() || 'txt'
+      };
+      
+      formData.append("data", JSON.stringify(metadata));
+      
+      console.log("Uploading file:", file.name, "with type:", file.type);
+      
+      const response = await fetch("/api/documents/upload", {
         method: "POST",
         body: formData
       });

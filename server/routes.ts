@@ -79,6 +79,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...parsedData.data,
         filePath: req.file.path,
       });
+      
+      res.status(200).json(document);
+      
+      // Process in background
+      processDocument(document, req.file.path)
+        .then(processedDoc => console.log("Document processed:", processedDoc))
+        .catch(err => console.error("Error processing document:", err));
+    } catch (error) {
+      console.error("Error uploading document:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+  
+  // Separate route for document uploads with metadata in a JSON field
+  app.post("/api/documents/upload", upload.single("file"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      
+      console.log("File uploaded successfully:", req.file.originalname);
+      
+      // Parse the data JSON
+      let parsedJson = {};
+      try {
+        if (req.body.data) {
+          parsedJson = JSON.parse(req.body.data);
+          console.log("Parsed document metadata:", parsedJson);
+        }
+      } catch (e) {
+        console.error("Error parsing data JSON:", e);
+      }
+      
+      // TypeScript-safe access
+      const title = typeof parsedJson === 'object' && parsedJson !== null && 'title' in parsedJson 
+        ? String((parsedJson as any).title) 
+        : req.file.originalname;
+        
+      const fileType = typeof parsedJson === 'object' && parsedJson !== null && 'type' in parsedJson 
+        ? String((parsedJson as any).type) 
+        : path.extname(req.file.originalname).substring(1);
+        
+      const description = typeof parsedJson === 'object' && parsedJson !== null && 'description' in parsedJson 
+        ? String((parsedJson as any).description) 
+        : `Uploaded file: ${req.file.originalname}`;
+      
+      const parsedData = insertDocumentSchema.safeParse({
+        title: title,
+        type: fileType,
+        description: description,
+        content: "", // Will be filled by document processor
+        fileSize: req.file.size,
+        pageCount: 0, // Will be updated after processing
+        userId: 1, // Default user for now
+      });
+
+      if (!parsedData.success) {
+        return res.status(400).json({ 
+          message: "Invalid document data", 
+          errors: parsedData.error.errors 
+        });
+      }
+
+      const document = await storage.createDocument({
+        ...parsedData.data,
+        filePath: req.file.path,
+      });
 
       // Process document asynchronously
       processDocument(document, req.file.path)
