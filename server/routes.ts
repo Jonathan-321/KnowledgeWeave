@@ -51,6 +51,207 @@ const upload = multer({
   },
 });
 
+// Helper function to generate sample quizzes for different concepts
+function generateSampleQuizForConcept(concept: any) {
+  // Common structure for all quizzes
+  const sampleQuestions = [
+    {
+      question: `What is the primary characteristic of ${concept.name}?`,
+      options: [
+        "It's a deprecated technology with limited applications",
+        `It's a fundamental aspect of ${concept.tags?.[0] || 'computer science'}`,
+        "It's only theoretical and has no practical applications",
+        "It's only used in specialized military applications"
+      ],
+      correctAnswer: 1,
+      explanation: `${concept.name} is indeed a fundamental concept in ${concept.tags?.[0] || 'computer science'} with numerous practical applications.`,
+      difficulty: "basic"
+    },
+    {
+      question: `Which of the following is NOT related to ${concept.name}?`,
+      options: [
+        `Practical applications of ${concept.name}`,
+        `Theory behind ${concept.name}`,
+        `History of ${concept.name}`,
+        `Cooking recipes inspired by ${concept.name}`
+      ],
+      correctAnswer: 3,
+      explanation: `While ${concept.name} has many applications in science and technology, it doesn't have direct connections to culinary arts or cooking recipes.`,
+      difficulty: "basic"
+    }
+  ];
+  
+  // Add concept-specific questions for the quantum computing concepts
+  const conceptSpecificQuestions: any = {
+    // Quantum Computing questions
+    "Quantum Computing": [
+      {
+        question: "Which principle allows quantum computers to process multiple states simultaneously?",
+        options: [
+          "Binary logic",
+          "Superposition",
+          "Classical parallelism",
+          "Digital transformation"
+        ],
+        correctAnswer: 1,
+        explanation: "Superposition is the quantum mechanical phenomenon where quantum systems can exist in multiple states simultaneously, which gives quantum computers their massive parallel processing capability.",
+        difficulty: "medium"
+      },
+      {
+        question: "What is quantum supremacy?",
+        options: [
+          "A political movement among quantum physicists",
+          "When quantum computers outperform classical computers at specific tasks",
+          "The superiority of quantum mechanics over classical physics",
+          "A theoretical state that cannot be achieved in practice"
+        ],
+        correctAnswer: 1,
+        explanation: "Quantum supremacy refers to the demonstration that a quantum computer can solve a problem that classical computers practically cannot, showing their computational advantage for certain tasks.",
+        difficulty: "medium"
+      }
+    ],
+    
+    // Qubits questions
+    "Qubits": [
+      {
+        question: "How many distinct states can n qubits represent simultaneously through superposition?",
+        options: [
+          "n",
+          "n²",
+          "2^n",
+          "n!"
+        ],
+        correctAnswer: 2,
+        explanation: "n qubits can represent 2^n states simultaneously through superposition, which gives quantum computers their exponential advantage for certain problems.",
+        difficulty: "medium"
+      },
+      {
+        question: "What is the main challenge in building practical quantum computers with many qubits?",
+        options: [
+          "Quantum decoherence",
+          "Processing speed",
+          "Power consumption",
+          "Size constraints"
+        ],
+        correctAnswer: 0,
+        explanation: "Quantum decoherence is the loss of quantum behavior when qubits interact with their environment, making it extremely difficult to maintain quantum states for useful computations.",
+        difficulty: "advanced"
+      }
+    ],
+    
+    // Quantum Entanglement questions
+    "Quantum Entanglement": [
+      {
+        question: "What did Einstein call quantum entanglement?",
+        options: [
+          "Quantum weirdness",
+          "Spooky action at a distance",
+          "The uncertainty principle",
+          "Wave-particle duality"
+        ],
+        correctAnswer: 1,
+        explanation: "Einstein referred to quantum entanglement as 'spooky action at a distance' because he was skeptical of the apparent faster-than-light influence between entangled particles.",
+        difficulty: "basic"
+      },
+      {
+        question: "How is quantum entanglement useful in quantum computing?",
+        options: [
+          "It allows for quantum teleportation",
+          "It enables faster-than-light communication",
+          "It creates secure quantum communication channels",
+          "All of the above"
+        ],
+        correctAnswer: 2,
+        explanation: "Quantum entanglement is essential for quantum key distribution, which allows for theoretically unhackable communication channels. It's also foundational for quantum teleportation, but cannot be used for faster-than-light communication.",
+        difficulty: "medium"
+      }
+    ],
+    
+    // Quantum Gates questions
+    "Quantum Gates": [
+      {
+        question: "What is the quantum equivalent of the classical NOT gate?",
+        options: [
+          "CNOT gate",
+          "Pauli-X gate",
+          "Hadamard gate",
+          "Toffoli gate"
+        ],
+        correctAnswer: 1,
+        explanation: "The Pauli-X gate is the quantum equivalent of the classical NOT gate. It rotates the state of a qubit around the X-axis of the Bloch sphere by π radians, flipping |0⟩ to |1⟩ and vice versa.",
+        difficulty: "medium"
+      },
+      {
+        question: "Which quantum gate creates superposition from a |0⟩ state?",
+        options: [
+          "SWAP gate",
+          "Pauli-Z gate",
+          "Hadamard gate",
+          "CNOT gate"
+        ],
+        correctAnswer: 2,
+        explanation: "The Hadamard gate creates superposition by transforming |0⟩ into (|0⟩ + |1⟩)/√2 and |1⟩ into (|0⟩ - |1⟩)/√2, creating an equal superposition of the basis states.",
+        difficulty: "medium"
+      }
+    ],
+    
+    // Neural Networks questions
+    "Neural Networks": [
+      {
+        question: "What is backpropagation used for in neural networks?",
+        options: [
+          "Data preprocessing",
+          "Training the network by adjusting weights",
+          "Visualizing network architecture",
+          "Compressing the neural network model"
+        ],
+        correctAnswer: 1,
+        explanation: "Backpropagation is an algorithm used to train neural networks by calculating gradients and adjusting weights to minimize the loss function.",
+        difficulty: "medium"
+      }
+    ],
+    
+    // Backpropagation questions
+    "Backpropagation": [
+      {
+        question: "Which of these is NOT a component of the backpropagation algorithm?",
+        options: [
+          "Forward pass",
+          "Loss computation",
+          "Backward pass (gradient calculation)",
+          "Random forest integration"
+        ],
+        correctAnswer: 3,
+        explanation: "Random forest integration is not part of backpropagation. The algorithm consists of forward pass, loss computation, and backward pass to compute gradients and update weights.",
+        difficulty: "medium"
+      }
+    ],
+    
+    // Graph Theory questions
+    "Graph Theory": [
+      {
+        question: "What is a directed acyclic graph (DAG)?",
+        options: [
+          "A graph with no edges",
+          "A graph with only bidirectional connections",
+          "A directed graph with no cycles",
+          "A graph where all nodes have equal degree"
+        ],
+        correctAnswer: 2,
+        explanation: "A directed acyclic graph (DAG) is a directed graph that contains no cycles, meaning there is no path that starts and ends at the same vertex.",
+        difficulty: "medium"
+      }
+    ]
+  };
+  
+  // Add the concept-specific questions if available, otherwise return the generic ones
+  if (concept.name in conceptSpecificQuestions) {
+    return [...sampleQuestions, ...conceptSpecificQuestions[concept.name]];
+  }
+  
+  return sampleQuestions;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Documents API
   app.post("/api/documents", upload.single("file"), async (req, res) => {
