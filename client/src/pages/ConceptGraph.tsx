@@ -47,29 +47,44 @@ export default function ConceptGraph() {
             Explore connections between concepts and discover learning paths
           </p>
         </div>
-        <Button 
-          onClick={() => {
-            fetch('/api/generate-quantum-concepts', { 
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' }
-            })
-            .then(response => response.json())
-            .then(data => {
-              console.log('Generated quantum concepts:', data);
-              
-              // Refresh data
-              setTimeout(() => {
-                window.location.reload();
-              }, 500);
-            })
-            .catch(error => {
-              console.error('Error generating concepts:', error);
-              alert('Error creating sample concepts. Please try again.');
-            });
-          }}
-        >
-          Generate Sample Concepts
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => {
+              fetch('/api/generate-quantum-concepts', { 
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+              })
+              .then(response => response.json())
+              .then(data => {
+                console.log('Generated quantum concepts:', data);
+                
+                // Refresh data
+                setTimeout(() => {
+                  window.location.reload();
+                }, 500);
+              })
+              .catch(error => {
+                console.error('Error generating concepts:', error);
+                alert('Error creating sample concepts. Please try again.');
+              });
+            }}
+          >
+            Generate Sample Concepts
+          </Button>
+          <Button 
+            variant="outline"
+            onClick={() => {
+              // Navigate to the first concept in the list
+              if (concepts && concepts.length > 0) {
+                window.location.href = `/learning?conceptId=${concepts[0].id}`;
+              } else {
+                alert('No concepts available. Please generate sample concepts first.');
+              }
+            }}
+          >
+            Test Concept Navigation
+          </Button>
+        </div>
       </div>
 
       {/* Knowledge Graph Visualization */}
