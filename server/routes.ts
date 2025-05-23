@@ -8,6 +8,7 @@ import { processDocument } from "./services/documentProcessor";
 import { generateInsights, extractConcepts } from "./services/anthropic";
 import { generateQuizQuestions } from "./services/quizGenerator";
 import { getRecommendedConcepts } from "./services/vectordb";
+import { resourceService } from "./services/resourceService";
 import {
   insertDocumentSchema,
   insertConceptSchema,
@@ -1202,6 +1203,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Adaptive quiz generation API for enhanced spaced repetition learning
   app.get("/api/quiz/:conceptId", async (req, res) => {
+    // Set content type explicitly to ensure client knows it's JSON
+    res.setHeader('Content-Type', 'application/json');
+    
     try {
       const conceptId = parseInt(req.params.conceptId);
       const concept = await storage.getConcept(conceptId);
@@ -1328,6 +1332,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Generate sample neural network concepts API
+  app.post("/api/generate-quantum-concepts", async (req, res) => {
+    try {
+      // Generate a set of related quantum computing concepts
+      const concepts = [
+        {
+          name: "Neural Networks",
+          description: "A computational model inspired by the human brain's structure. Neural networks consist of interconnected nodes (neurons) that process and transmit information. They are the foundation of deep learning, enabling machines to learn from data and make predictions or decisions.",
+          tags: ["Machine Learning", "Deep Learning", "AI"]
+        },
+        {
+          name: "Convolutional Neural Networks",
+          description: "A specialized type of neural network designed for processing grid-like data, such as images. CNNs use convolutional layers to detect spatial patterns, making them highly effective for computer vision tasks like image recognition and classification.",
+          tags: ["Computer Vision", "Image Processing", "Deep Learning"]
+        },
+        {
+          name: "Recurrent Neural Networks",
+          description: "Neural networks that incorporate feedback connections, allowing them to maintain internal state or memory. This makes RNNs suitable for processing sequential data like text, time series, or speech, where context from previous inputs matters.",
+          tags: ["Sequential Data", "Natural Language Processing", "Time Series"]
+        },
+        {
+          name: "Backpropagation",
+          description: "The primary algorithm for training neural networks. It calculates the gradient of the loss function with respect to each weight by propagating error backwards through the network, enabling optimization via gradient descent.",
+          tags: ["Optimization", "Gradient Descent", "Training"]
+        },
+        {
+          name: "Activation Functions",
+          description: "Mathematical functions that determine the output of a neural network node. They introduce non-linearity, allowing networks to learn complex patterns. Common examples include ReLU, sigmoid, and tanh functions.",
+          tags: ["ReLU", "Sigmoid", "Non-linearity"]
+        }
+      ];
+      
+      // Store concepts and create connections between them
+      const storedConcepts = [];
+      
+      for (const concept of concepts) {
+        const conceptId = await storage.createConcept({
+          name: concept.name,
+          description: concept.description,
+          tags: concept.tags,
+          difficulty: "intermediate",
+          prerequisites: []
+        });
+        
+        storedConcepts.push({
+          id: conceptId,
+          name: concept.name
+        });
+      }
+      
+      // Create connections between concepts (representing a knowledge graph)
+      const connections = [
+        { source: 0, target: 1, relationship: "is foundation for", strength: "strong" },
+        { source: 0, target: 2, relationship: "is foundation for", strength: "strong" },
+        { source: 0, target: 3, relationship: "uses", strength: "strong" },
+        { source: 0, target: 4, relationship: "contains", strength: "strong" },
+        { source: 1, target: 4, relationship: "uses", strength: "moderate" },
+        { source: 2, target: 4, relationship: "uses", strength: "moderate" },
+        { source: 3, target: 4, relationship: "optimizes", strength: "moderate" }
+      ];
+      
+      for (const conn of connections) {
+        await storage.createConceptConnection({
+          sourceConceptId: storedConcepts[conn.source].id,
+          targetConceptId: storedConcepts[conn.target].id,
+          relationship: conn.relationship,
+          strength: conn.strength
+        });
+      }
+      
+      // Generate sample learning progress for each concept
+      for (const concept of storedConcepts) {
+        const randomProgress = Math.floor(Math.random() * 80) + 20; // 20-100%
+        const randomPractice = Math.floor(Math.random() * 70) + 10; // 10-80%
+        
+        await storage.createLearningProgress({
+          conceptId: concept.id,
+          userId: 1,
+          comprehension: randomProgress,
+          practice: randomPractice,
+          lastReviewed: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000), // 0-7 days ago
+          nextReviewDate: new Date(Date.now() + Math.random() * 14 * 24 * 60 * 60 * 1000), // 0-14 days from now
+          interval: Math.floor(Math.random() * 10) + 1,
+          easeFactor: 250 + Math.floor(Math.random() * 100),
+          reviewCount: Math.floor(Math.random() * 15),
+          totalStudyTime: Math.floor(Math.random() * 3600) // 0-3600 seconds
+        });
+      }
+      
+      res.json({
+        message: "Sample quantum computing concepts created",
+        concepts: storedConcepts
+      });
+    } catch (error: any) {
+      console.error("Error generating sample concepts:", error);
+      res.status(500).json({ message: "Error generating sample concepts", error: error.message });
+    }
+  });
+
   // Recommended concepts API
   app.get("/api/recommendations/:conceptId", async (req, res) => {
     try {
@@ -1346,7 +1449,229 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Graph API endpoint for knowledge graph visualization
+  app.get("/api/graph", async (req, res) => {
+    try {
+      // Get all concepts
+      const concepts = await storage.getAllConcepts();
+      // Get all concept connections
+      const connections = await storage.getAllConceptConnections();
+      
+      // Transform data into graph format
+      const nodes = concepts.map(concept => ({
+        id: concept.id,
+        label: concept.name,
+        type: "concept"
+      }));
+      
+      const links = connections.map(conn => ({
+        source: conn.sourceConceptId,
+        target: conn.targetConceptId,
+        relationship: conn.relationship,
+        strength: conn.strength
+      }));
+      
+      res.json({
+        nodes,
+        links
+      });
+    } catch (error: any) {
+      console.error("Error getting graph data:", error);
+      res.status(500).json({ message: "Error getting graph data", error: error.message });
+    }
+  });
+  
   // Using our existing extractConcepts function from the imported module
+
+  // Resource management endpoints
+  
+  // Get resources for a concept
+  app.get("/api/resources/concept/:conceptId", async (req, res) => {
+    try {
+      const conceptId = parseInt(req.params.conceptId);
+      const resources = await storage.getResourcesByConceptId(conceptId);
+      res.json(resources);
+    } catch (error: any) {
+      console.error("Error getting resources for concept:", error);
+      res.status(500).json({ message: "Error getting resources", error: error.message });
+    }
+  });
+  
+  // Discover new resources for a concept
+  app.post("/api/resources/discover/:conceptId", async (req, res) => {
+    try {
+      const conceptId = parseInt(req.params.conceptId);
+      const { query, resourceTypes, maxResults } = req.body;
+      
+      // Get basic resources first
+      const resources = await resourceService.discoverResourcesForConcept(conceptId, maxResults || 10);
+      
+      // TODO: Implement advanced filtering by query and resourceTypes in future enhancement
+      
+      res.json(resources);
+    } catch (error: any) {
+      console.error("Error discovering resources:", error);
+      res.status(500).json({ message: "Error discovering resources", error: error.message });
+    }
+  });
+  
+  // Add a new resource manually
+  app.post("/api/resources", async (req, res) => {
+    try {
+      const { resource, conceptId } = req.body;
+      
+      // First create the resource
+      const createdResource = await storage.createResource(resource);
+      
+      // Then link it to the concept if conceptId is provided
+      if (conceptId) {
+        await storage.createConceptResource({
+          conceptId,
+          resourceId: createdResource.id,
+          relevanceScore: 80, // Default high score for manually added resources
+          isRequired: false
+        });
+      }
+      
+      res.status(201).json(createdResource);
+    } catch (error: any) {
+      console.error("Error creating resource:", error);
+      res.status(500).json({ message: "Error creating resource", error: error.message });
+    }
+  });
+  
+  // Update a resource
+  app.put("/api/resources/:resourceId", async (req, res) => {
+    try {
+      const resourceId = parseInt(req.params.resourceId);
+      const updates = req.body;
+      
+      const updatedResource = await storage.updateResource(resourceId, updates);
+      res.json(updatedResource);
+    } catch (error: any) {
+      console.error("Error updating resource:", error);
+      res.status(500).json({ message: "Error updating resource", error: error.message });
+    }
+  });
+  
+  // Delete a resource
+  app.delete("/api/resources/:resourceId", async (req, res) => {
+    try {
+      const resourceId = parseInt(req.params.resourceId);
+      await storage.deleteResource(resourceId);
+      res.status(204).send();
+    } catch (error: any) {
+      console.error("Error deleting resource:", error);
+      res.status(500).json({ message: "Error deleting resource", error: error.message });
+    }
+  });
+  
+  // Record a user's interaction with a resource
+  app.post("/api/resources/interaction", async (req, res) => {
+    try {
+      const interaction = req.body;
+      const createdInteraction = await storage.createResourceInteraction(interaction);
+      res.status(201).json(createdInteraction);
+    } catch (error: any) {
+      console.error("Error recording interaction:", error);
+      res.status(500).json({ message: "Error recording interaction", error: error.message });
+    }
+  });
+  
+  // Get a user's interactions with resources
+  app.get("/api/resources/interactions/user/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const interactions = await storage.getResourceInteractionsByUserId(userId);
+      res.json(interactions);
+    } catch (error: any) {
+      console.error("Error getting user interactions:", error);
+      res.status(500).json({ message: "Error getting interactions", error: error.message });
+    }
+  });
+  
+  // Get personalized resource recommendations for a user and concept
+  app.get("/api/resources/recommend/:userId/:conceptId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const conceptId = parseInt(req.params.conceptId);
+      const count = req.query.count ? parseInt(req.query.count as string) : 5;
+      
+      const recommendations = await resourceService.recommendResourcesForUser(userId, conceptId, count);
+      res.json(recommendations);
+    } catch (error: any) {
+      console.error("Error getting recommendations:", error);
+      res.status(500).json({ message: "Error getting recommendations", error: error.message });
+    }
+  });
+  
+  // Get or create a user's learning style
+  app.get("/api/learning-style/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      let style = await storage.getLearningStyleByUserId(userId);
+      
+      // If no learning style exists, create a default one
+      if (!style) {
+        style = await storage.createLearningStyle({
+          userId,
+          visualScore: 50,
+          auditoryScore: 50,
+          readWriteScore: 50,
+          kinestheticScore: 50,
+          theoreticalScore: 50,
+          practicalScore: 50
+        });
+      }
+      
+      res.json(style);
+    } catch (error: any) {
+      console.error("Error getting learning style:", error);
+      res.status(500).json({ message: "Error getting learning style", error: error.message });
+    }
+  });
+  
+  // Update a user's learning style
+  app.put("/api/learning-style/:userId", async (req, res) => {
+    try {
+      const userId = parseInt(req.params.userId);
+      const updates = req.body;
+      
+      // Check if learning style exists
+      let style = await storage.getLearningStyleByUserId(userId);
+      
+      if (style) {
+        // Update existing style
+        style = await storage.updateLearningStyle(style.id, {
+          ...updates,
+          lastUpdated: new Date()
+        });
+      } else {
+        // Create new style
+        style = await storage.createLearningStyle({
+          userId,
+          ...updates
+        });
+      }
+      
+      res.json(style);
+    } catch (error: any) {
+      console.error("Error updating learning style:", error);
+      res.status(500).json({ message: "Error updating learning style", error: error.message });
+    }
+  });
+  
+  // Generate a learning path for a concept
+  app.get("/api/learning-path/:conceptId", async (req, res) => {
+    try {
+      const conceptId = parseInt(req.params.conceptId);
+      const path = await resourceService.generateLearningPath(conceptId);
+      res.json(path);
+    } catch (error: any) {
+      console.error("Error generating learning path:", error);
+      res.status(500).json({ message: "Error generating learning path", error: error.message });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

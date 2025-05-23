@@ -6,7 +6,9 @@ import {
   conceptConnections, ConceptConnection, InsertConceptConnection,
   documentConcepts, DocumentConcept, InsertDocumentConcept,
   learningProgress, LearningProgress, InsertLearningProgress,
-  insights, Insight, InsertInsight
+  insights, Insight, InsertInsight,
+  resources, conceptResources, resourceInteractions, learningStyles,
+  insertResourceSchema, insertConceptResourceSchema, insertResourceInteractionSchema, insertLearningStyleSchema
 } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { IStorage } from "./storage";
@@ -224,5 +226,192 @@ export class DatabaseStorage implements IStorage {
 
   async deleteInsight(id: number): Promise<void> {
     await db.delete(insights).where(eq(insights.id, id));
+  }
+
+  // Resource methods
+  async getResource(id: number): Promise<any | undefined> {
+    const [resource] = await db.select().from(resources).where(eq(resources.id, id));
+    return resource;
+  }
+
+  async getResourcesByUrl(url: string): Promise<any[]> {
+    return db.select().from(resources).where(eq(resources.url, url));
+  }
+
+  async getAllResources(): Promise<any[]> {
+    return db.select().from(resources);
+  }
+
+  async createResource(resource: typeof insertResourceSchema._type): Promise<any> {
+    const [createdResource] = await db.insert(resources).values(resource).returning();
+    return createdResource;
+  }
+
+  async updateResource(id: number, data: Partial<typeof resources.$inferSelect>): Promise<any> {
+    const [updatedResource] = await db
+      .update(resources)
+      .set(data)
+      .where(eq(resources.id, id))
+      .returning();
+    return updatedResource;
+  }
+
+  async deleteResource(id: number): Promise<void> {
+    await db.delete(resources).where(eq(resources.id, id));
+  }
+
+  // Concept Resource methods
+  async getConceptResource(id: number): Promise<any | undefined> {
+    const [conceptResource] = await db
+      .select()
+      .from(conceptResources)
+      .where(eq(conceptResources.id, id));
+    return conceptResource;
+  }
+
+  async getResourcesByConceptId(conceptId: number): Promise<any[]> {
+    const relations = await db
+      .select()
+      .from(conceptResources)
+      .where(eq(conceptResources.conceptId, conceptId));
+    
+    // Get the full resource objects
+    const resourceIds = relations.map((rel: any) => rel.resourceId);
+    if (resourceIds.length === 0) return [];
+    
+    // Fetch all resources in one query
+    const resourcesList = await db
+      .select()
+      .from(resources)
+      .where(resources.id.in(resourceIds));
+    
+    // Combine with relation data (relevance scores, etc.)
+    return resourcesList.map((resource: any) => {
+      const relation = relations.find((rel: any) => rel.resourceId === resource.id);
+      return {
+        ...resource,
+        relevanceScore: relation?.relevanceScore,
+        learningPathOrder: relation?.learningPathOrder,
+        isRequired: relation?.isRequired
+      };
+    });
+  }
+
+  async getConceptsByResourceId(resourceId: number): Promise<any[]> {
+    const relations = await db
+      .select()
+      .from(conceptResources)
+      .where(eq(conceptResources.resourceId, resourceId));
+    
+    const conceptIds = relations.map((rel: any) => rel.conceptId);
+    if (conceptIds.length === 0) return [];
+    
+    return db
+      .select()
+      .from(concepts)
+      .where(concepts.id.in(conceptIds));
+  }
+  
+  async getConceptResourcesByIds(conceptId: number, resourceId: number): Promise<any[]> {
+    return db
+      .select()
+      .from(conceptResources)
+      .where(eq(conceptResources.conceptId, conceptId))
+      .where(eq(conceptResources.resourceId, resourceId));
+  }
+
+  async createConceptResource(conceptResource: typeof insertConceptResourceSchema._type): Promise<any> {
+    const [createdConceptResource] = await db
+      .insert(conceptResources)
+      .values(conceptResource)
+      .returning();
+    return createdConceptResource;
+  }
+
+  async updateConceptResource(id: number, data: Partial<typeof conceptResources.$inferSelect>): Promise<any> {
+    const [updatedConceptResource] = await db
+      .update(conceptResources)
+      .set(data)
+      .where(eq(conceptResources.id, id))
+      .returning();
+    return updatedConceptResource;
+  }
+
+  async deleteConceptResource(id: number): Promise<void> {
+    await db.delete(conceptResources).where(eq(conceptResources.id, id));
+  }
+
+  // Resource Interaction methods
+  async getResourceInteraction(id: number): Promise<any | undefined> {
+    const [interaction] = await db
+      .select()
+      .from(resourceInteractions)
+      .where(eq(resourceInteractions.id, id));
+    return interaction;
+  }
+
+  async getResourceInteractionsByUserId(userId: number): Promise<any[]> {
+    return db
+      .select()
+      .from(resourceInteractions)
+      .where(eq(resourceInteractions.userId, userId));
+  }
+
+  async getResourceInteractionsByResourceId(resourceId: number): Promise<any[]> {
+    return db
+      .select()
+      .from(resourceInteractions)
+      .where(eq(resourceInteractions.resourceId, resourceId));
+  }
+
+  async createResourceInteraction(interaction: typeof insertResourceInteractionSchema._type): Promise<any> {
+    const [createdInteraction] = await db
+      .insert(resourceInteractions)
+      .values(interaction)
+      .returning();
+    return createdInteraction;
+  }
+
+  async updateResourceInteraction(id: number, data: Partial<typeof resourceInteractions.$inferSelect>): Promise<any> {
+    const [updatedInteraction] = await db
+      .update(resourceInteractions)
+      .set(data)
+      .where(eq(resourceInteractions.id, id))
+      .returning();
+    return updatedInteraction;
+  }
+
+  // Learning Style methods
+  async getLearningStyle(id: number): Promise<any | undefined> {
+    const [style] = await db
+      .select()
+      .from(learningStyles)
+      .where(eq(learningStyles.id, id));
+    return style;
+  }
+
+  async getLearningStyleByUserId(userId: number): Promise<any | undefined> {
+    const [style] = await db
+      .select()
+      .from(learningStyles)
+      .where(eq(learningStyles.userId, userId));
+    return style;
+  }
+
+  async createLearningStyle(style: typeof insertLearningStyleSchema._type): Promise<any> {
+    const [createdStyle] = await db
+      .insert(learningStyles)
+      .values(style)
+      .returning();
+    return createdStyle;
+  }
+
+  async updateLearningStyle(id: number, data: Partial<typeof learningStyles.$inferSelect>): Promise<any> {
+    const [updatedStyle] = await db
+      .update(learningStyles)
+      .set(data)
+      .where(eq(learningStyles.id, id))
+      .returning();
+    return updatedStyle;
   }
 }

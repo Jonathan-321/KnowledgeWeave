@@ -141,7 +141,96 @@ export type GraphLink = {
 };
 
 // Knowledge Graph type combining nodes and links
-export type KnowledgeGraph = {
+export interface KnowledgeGraph {
   nodes: GraphNode[];
   links: GraphLink[];
-};
+}
+
+// Learning resource types and categories
+export const resourceTypes = [
+  'article',
+  'video',
+  'interactive',
+  'visualization',
+  'course',
+  'documentation',
+  'tutorial',
+  'tool'
+] as const;
+
+export type ResourceType = typeof resourceTypes[number];
+
+export const resources = pgTable("learning_resources", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  url: text("url").notNull(),
+  description: text("description"),
+  type: text("type").notNull(), // One of ResourceType
+  sourceAuthority: integer("source_authority").default(50), // 0-100 score
+  visualRichness: integer("visual_richness").default(50), // 0-100 score
+  interactivity: integer("interactivity").default(0), // 0-100 score
+  qualityScore: integer("quality_score").default(50), // 0-100 score
+  imageUrl: text("image_url"),
+  tags: text("tags").array(),
+  dateAdded: timestamp("date_added").defaultNow(),
+  lastChecked: timestamp("last_checked").defaultNow(),
+  isActive: boolean("is_active").default(true),
+});
+
+export const insertResourceSchema = createInsertSchema(resources).omit({
+  id: true,
+  dateAdded: true,
+  lastChecked: true,
+});
+
+// Connecting resources to concepts
+export const conceptResources = pgTable("concept_resources", {
+  id: serial("id").primaryKey(),
+  conceptId: integer("concept_id").notNull(),
+  resourceId: integer("resource_id").notNull(),
+  relevanceScore: integer("relevance_score").default(50), // 0-100
+  learningPathOrder: integer("learning_path_order"), // Optional position in learning path
+  isRequired: boolean("is_required").default(false),
+});
+
+export const insertConceptResourceSchema = createInsertSchema(conceptResources).omit({
+  id: true,
+});
+
+// User interaction with resources
+export const resourceInteractions = pgTable("resource_interactions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  resourceId: integer("resource_id").notNull(),
+  interactionType: text("interaction_type").notNull(), // 'view', 'complete', 'bookmark', 'rate'
+  rating: integer("rating"), // 1-5 if rated
+  helpfulnessScore: integer("helpfulness_score"), // 1-100 subjective score
+  timeSpent: integer("time_spent"), // seconds
+  timestamp: timestamp("timestamp").defaultNow(),
+  notes: text("notes"),
+});
+
+export const insertResourceInteractionSchema = createInsertSchema(resourceInteractions).omit({
+  id: true,
+  timestamp: true,
+});
+
+// Learning styles for users
+export const learningStyles = pgTable("learning_styles", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().unique(),
+  visualScore: integer("visual_score").default(50), // 0-100
+  auditoryScore: integer("auditory_score").default(50), // 0-100
+  readWriteScore: integer("read_write_score").default(50), // 0-100
+  kinestheticScore: integer("kinesthetic_score").default(50), // 0-100
+  theoreticalScore: integer("theoretical_score").default(50), // 0-100
+  practicalScore: integer("practical_score").default(50), // 0-100
+  lastUpdated: timestamp("last_updated").defaultNow(),
+});
+
+export const insertLearningStyleSchema = createInsertSchema(learningStyles).omit({
+  id: true,
+  lastUpdated: true,
+});
+
+// Knowledge Graph type combining nodes and links

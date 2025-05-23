@@ -6,8 +6,11 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Check, AlertCircle, ArrowRight, RotateCcw, Brain } from 'lucide-react';
+import { Check, AlertCircle, ArrowRight, RotateCcw, Brain, BookOpen, Target } from 'lucide-react';
+import LearningProgressChart from './LearningProgressChart';
+import ShortAnswerQuestion from './ShortAnswerQuestion';
 
 interface QuizQuestion {
   question: string;
@@ -30,6 +33,7 @@ interface LearningProgress {
   easeFactor: number;
   reviewCount: number;
   totalStudyTime: number;
+  knowledgeGaps?: string[];
 }
 
 interface QuizProps {
@@ -45,6 +49,9 @@ export function AdaptiveQuiz({ conceptId }: QuizProps) {
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [userRating, setUserRating] = useState<number>(3); // Default to medium rating
   const [correctAnswersCount, setCorrectAnswersCount] = useState(0);
+  const [activeTab, setActiveTab] = useState('quiz');
+  const [knowledgeGaps, setKnowledgeGaps] = useState<string[]>([]);
+  const [userAnswer, setUserAnswer] = useState<string>('');
 
   // Fetch concept information
   const { data: concept } = useQuery({
@@ -65,9 +72,13 @@ export function AdaptiveQuiz({ conceptId }: QuizProps) {
         // First try to fetch from API
         try {
           const response = await fetch(`/api/quiz/${conceptId}`);
-          if (response.ok) {
+          // Check if response is JSON
+          const contentType = response.headers.get('content-type');
+          if (response.ok && contentType && contentType.includes('application/json')) {
             return response.json();
           }
+          // If not JSON or not OK, we'll fall through to the fallback
+          console.log('API returned non-JSON response, using fallback');
         } catch (apiErr) {
           console.error('API quiz fetch error:', apiErr);
         }
@@ -143,7 +154,11 @@ export function AdaptiveQuiz({ conceptId }: QuizProps) {
 
   // Update learning progress mutation
   const updateProgress = useMutation({
-    mutationFn: async (data: { quality: number, duration: number }) => {
+    mutationFn: async (data: { 
+      quality: number, 
+      duration: number, 
+      knowledgeGaps?: string[] 
+    }) => {
       const response = await fetch(`/api/learning/progress/${conceptId}`, {
         method: 'POST',
         body: JSON.stringify(data),
@@ -193,13 +208,30 @@ export function AdaptiveQuiz({ conceptId }: QuizProps) {
     }
   };
 
-  // Submit answer
+  // Submit answer for multiple choice questions
   const handleSubmitAnswer = () => {
     if (selectedOption !== null) {
       setIsAnswerSubmitted(true);
       if (selectedOption === currentQuestion?.correctAnswer) {
         setCorrectAnswersCount(prev => prev + 1);
+      } else {
+        // Track knowledge gaps based on incorrect answers
+        if (currentQuestion?.conceptArea && 
+            !knowledgeGaps.includes(currentQuestion.conceptArea)) {
+          setKnowledgeGaps(prev => [...prev, currentQuestion.conceptArea]);
+        }
       }
+    }
+  };
+  
+  // Handle short answer submission
+  const handleShortAnswerSubmit = (isCorrect: boolean) => {
+    setIsAnswerSubmitted(true);
+    if (isCorrect) {
+      setCorrectAnswersCount(prev => prev + 1);
+    } else if (currentQuestion?.conceptArea && 
+              !knowledgeGaps.includes(currentQuestion.conceptArea)) {
+      setKnowledgeGaps(prev => [...prev, currentQuestion.conceptArea]);
     }
   };
 
@@ -232,7 +264,12 @@ export function AdaptiveQuiz({ conceptId }: QuizProps) {
       // Ensure quality is between 1-5
       const quality = Math.max(1, Math.min(5, calculatedQuality));
       
-      updateProgress.mutate({ quality, duration });
+      // Include knowledge gaps in the update
+      updateProgress.mutate({ 
+        quality, 
+        duration, 
+        knowledgeGaps: knowledgeGaps.length > 0 ? knowledgeGaps : undefined 
+      });
       
       // Reset quiz state
       setCurrentQuestionIndex(0);
@@ -242,6 +279,8 @@ export function AdaptiveQuiz({ conceptId }: QuizProps) {
       setStartTime(null);
       setTimer(0);
       setCorrectAnswersCount(0);
+      setKnowledgeGaps([]);
+      setUserAnswer('');
       
       // Refetch questions to get newer adaptive questions
       setTimeout(() => {
@@ -287,44 +326,87 @@ export function AdaptiveQuiz({ conceptId }: QuizProps) {
         <CardHeader>
           <CardTitle className="text-center">Quiz Completed!</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="text-center text-2xl font-bold">
-            Score: {score}%
-          </div>
-          
-          <div className="space-y-4 mt-6">
-            <p className="text-center">
-              You got {correctAnswersCount} out of {quizData?.questions?.length} questions correct.
-            </p>
+        <CardContent>
+          <Tabs defaultValue="results" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="results">
+                <Target className="h-4 w-4 mr-2" />
+                Quiz Results
+              </TabsTrigger>
+              <TabsTrigger value="progress">
+                <Brain className="h-4 w-4 mr-2" />
+                Learning Progress
+              </TabsTrigger>
+            </TabsList>
             
-            <div className="flex justify-center">
-              <Progress value={score} className="w-3/4 h-4" />
-            </div>
-            
-            <div className="mt-6">
-              <p className="text-center mb-2">How would you rate your understanding of this concept now?</p>
-              <div className="flex justify-center space-x-4">
-                {[1, 2, 3, 4, 5].map((rating) => (
-                  <Button
-                    key={rating}
-                    variant={userRating === rating ? "default" : "outline"}
-                    className="w-10 h-10 rounded-full"
-                    onClick={() => setUserRating(rating)}
-                  >
-                    {rating}
-                  </Button>
-                ))}
+            <TabsContent value="results" className="space-y-4 mt-4">
+              <div className="text-center text-2xl font-bold">
+                Score: {score}%
               </div>
-              <div className="flex justify-between text-sm mt-1 px-4">
-                <span>Difficult</span>
-                <span>Easy</span>
+              
+              <div className="space-y-4 mt-6">
+                <p className="text-center">
+                  You got {correctAnswersCount} out of {quizData?.questions?.length} questions correct.
+                </p>
+                
+                <div className="flex justify-center">
+                  <Progress value={score} className="w-3/4 h-4" />
+                </div>
+                
+                {knowledgeGaps.length > 0 && (
+                  <div className="mt-4 p-4 bg-amber-50 rounded-md">
+                    <h3 className="text-sm font-medium text-amber-800 mb-2 flex items-center">
+                      <AlertCircle className="h-4 w-4 mr-1" /> 
+                      Knowledge Gaps Identified
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {knowledgeGaps.map((gap, index) => (
+                        <span key={index} className="px-2 py-1 text-xs bg-amber-100 text-amber-800 rounded-full">
+                          {gap}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="mt-6">
+                  <p className="text-center mb-2">How would you rate your understanding of this concept now?</p>
+                  <div className="flex justify-center space-x-4">
+                    {[1, 2, 3, 4, 5].map((rating) => (
+                      <Button
+                        key={rating}
+                        variant={userRating === rating ? "default" : "outline"}
+                        className="w-10 h-10 rounded-full"
+                        onClick={() => setUserRating(rating)}
+                      >
+                        {rating}
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="flex justify-between text-sm mt-1 px-4">
+                    <span>Difficult</span>
+                    <span>Easy</span>
+                  </div>
+                </div>
+                
+                <div className="mt-4 text-center text-sm text-muted-foreground">
+                  Study time: {formatTime(timer)}
+                </div>
               </div>
-            </div>
+            </TabsContent>
             
-            <div className="mt-4 text-center text-sm text-muted-foreground">
-              Study time: {formatTime(timer)}
-            </div>
-          </div>
+            <TabsContent value="progress" className="mt-4">
+              {progress && (
+                <LearningProgressChart 
+                  progress={{
+                    ...progress,
+                    knowledgeGaps: knowledgeGaps.length > 0 ? knowledgeGaps : undefined
+                  }}
+                  conceptName={concept && typeof concept === 'object' && 'name' in concept ? String(concept.name) : undefined}
+                />
+              )}
+            </TabsContent>
+          </Tabs>
         </CardContent>
         <CardFooter className="flex justify-center space-x-4">
           <Button variant="outline" onClick={handleRestartQuiz}>
@@ -362,7 +444,14 @@ export function AdaptiveQuiz({ conceptId }: QuizProps) {
           </div>
         </div>
         <div className="flex justify-between items-center text-sm">
-          <div>Difficulty: <span className="font-medium">{currentQuestion?.difficulty || 'Medium'}</span></div>
+          <div className="flex items-center">
+            <div className="mr-4">Difficulty: <span className="font-medium">{currentQuestion?.difficulty || 'Medium'}</span></div>
+            {currentQuestion?.conceptArea && (
+              <div className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
+                {currentQuestion.conceptArea}
+              </div>
+            )}
+          </div>
           <div>Time: {formatTime(timer)}</div>
         </div>
         <Progress 
@@ -374,7 +463,8 @@ export function AdaptiveQuiz({ conceptId }: QuizProps) {
       <CardContent className="space-y-6">
         <div className="text-lg font-medium">{currentQuestion?.question}</div>
         
-        {currentQuestion?.options && (
+        {/* Multiple choice question */}
+        {currentQuestion?.type !== 'short_answer' && currentQuestion?.options && (
           <RadioGroup
             value={selectedOption !== null ? selectedOption.toString() : undefined}
             onValueChange={(value) => handleOptionSelect(parseInt(value))}
@@ -411,7 +501,20 @@ export function AdaptiveQuiz({ conceptId }: QuizProps) {
           </RadioGroup>
         )}
         
-        {isAnswerSubmitted && (
+        {/* Short answer question */}
+        {currentQuestion?.type === 'short_answer' && (
+          <ShortAnswerQuestion 
+            question={{
+              question: currentQuestion.question,
+              correctAnswer: String(currentQuestion.correctAnswer),
+              explanation: currentQuestion.explanation
+            }}
+            onAnswerSubmit={handleShortAnswerSubmit}
+          />
+        )}
+        
+        {/* Explanation for multiple choice after submission */}
+        {isAnswerSubmitted && currentQuestion?.type !== 'short_answer' && (
           <div className="mt-4 p-4 bg-slate-50 rounded-md">
             <div className="font-medium mb-1">
               {selectedOption === currentQuestion?.correctAnswer 
@@ -426,23 +529,34 @@ export function AdaptiveQuiz({ conceptId }: QuizProps) {
         )}
       </CardContent>
       
-      <CardFooter className="flex justify-end space-x-4">
-        {!isAnswerSubmitted ? (
-          <Button 
-            onClick={handleSubmitAnswer}
-            disabled={selectedOption === null}
-          >
-            Submit Answer
-          </Button>
-        ) : (
-          <Button onClick={handleNextQuestion}>
-            {currentQuestionIndex < (quizData.questions.length - 1) 
-              ? 'Next Question' 
-              : 'Complete Quiz'
-            }
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-        )}
+      <CardFooter className="flex justify-between">
+        <Button 
+          variant="ghost" 
+          onClick={() => setActiveTab(activeTab === 'quiz' ? 'progress' : 'quiz')}
+          className="text-sm"
+        >
+          <BookOpen className="h-4 w-4 mr-2" />
+          {activeTab === 'quiz' ? 'View Progress' : 'Back to Quiz'}
+        </Button>
+        
+        <div>
+          {!isAnswerSubmitted && currentQuestion?.type !== 'short_answer' ? (
+            <Button 
+              onClick={handleSubmitAnswer}
+              disabled={selectedOption === null}
+            >
+              Submit Answer
+            </Button>
+          ) : isAnswerSubmitted && (
+            <Button onClick={handleNextQuestion}>
+              {currentQuestionIndex < (quizData.questions.length - 1) 
+                ? 'Next Question' 
+                : 'Complete Quiz'
+              }
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          )}
+        </div>
       </CardFooter>
     </Card>
   );

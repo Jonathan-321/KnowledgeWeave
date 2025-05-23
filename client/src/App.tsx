@@ -11,6 +11,19 @@ import Documents from "./pages/Documents";
 import Learning from "./pages/Learning";
 import Insights from "./pages/Insights";
 import ConceptGraph from "./pages/ConceptGraph";
+import Dashboard from "./pages/Dashboard";
+import ProfileSettings from "./pages/ProfileSettings";
+import { Suspense } from "react";
+import Statistics from "./pages/Statistics";
+
+// Type for route params
+
+// Type for route params
+type Params = { conceptId?: string };
+
+// Function to convert route params to component props
+const withRouteParams = (Component: any, initialProps: any = {}) => 
+  (params: Params) => <Component {...initialProps} {...params} />;
 
 function Router() {
   return (
@@ -22,6 +35,21 @@ function Router() {
         <Route path="/insights" component={Insights} />
         <Route path="/knowledge" component={ConceptGraph} />
         <Route path="/graph" component={ConceptGraph} />
+        <Route path="/dashboard" component={Dashboard} />
+        <Route path="/profile" component={ProfileSettings} />
+        <Route path="/statistics">
+          {() => (
+            <Suspense fallback={<div className="container mx-auto py-12 text-center">Loading statistics...</div>}>
+              <Statistics />
+            </Suspense>
+          )}
+        </Route>
+        <Route path="/quiz/:conceptId">
+          {({ conceptId }) => {
+            const conceptIdParam = conceptId ? parseInt(conceptId) : undefined;
+            return <Learning conceptId={conceptIdParam} initialTab="quiz" />;
+          }}
+        </Route>
         <Route component={NotFound} />
       </Switch>
     </MainLayout>

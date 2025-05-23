@@ -9,28 +9,110 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Brain, Calendar, BookOpen, BarChart, ArrowLeft } from 'lucide-react';
 
-export default function Learning() {
-  const [selectedConceptId, setSelectedConceptId] = useState<number | null>(null);
+interface LearningProps {
+  conceptId?: number;
+  initialTab?: string;
+}
+
+interface Concept {
+  id: number;
+  name: string;
+  description?: string;
+  category?: string;
+}
+
+interface LearningProgress {
+  id?: number;
+  conceptId: number;
+  comprehension: number;
+  practice: number;
+  reviewCount: number;
+  interval: number;
+  nextReviewDate: string;
+  lastReviewDate: string;
+  lastReviewed?: string; // Alias for lastReviewDate used in some parts of the code
+  strengthFactor: number;
+  easeFactor?: number; // Alias for strengthFactor used in some parts of the code
+}
+
+export default function Learning({ conceptId, initialTab = 'learning' }: LearningProps) {
+  const [selectedConceptId, setSelectedConceptId] = useState<number | null>(conceptId || null);
   const [location, navigate] = useLocation();
+  const [activeTab, setActiveTab] = useState(initialTab);
   
-  // Check URL parameters for conceptId on component mount
+  // Check URL parameters for conceptId on component mount if not provided via props
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const conceptId = params.get('conceptId');
-    
-    if (conceptId && !isNaN(parseInt(conceptId))) {
-      setSelectedConceptId(parseInt(conceptId));
+    if (!conceptId) {
+      const params = new URLSearchParams(window.location.search);
+      const paramConceptId = params.get('conceptId');
+      
+      if (paramConceptId && !isNaN(parseInt(paramConceptId))) {
+        setSelectedConceptId(parseInt(paramConceptId));
+      }
     }
-  }, []);
+  }, [conceptId]);
   
   // Fetch all concepts
-  const { data: concepts, isLoading: isLoadingConcepts } = useQuery({
+  const { data: concepts, isLoading: isLoadingConcepts } = useQuery<Concept[]>({
     queryKey: ['/api/concepts'],
+    queryFn: async () => {
+      // Mock data for demonstration
+      return [
+        { id: 101, name: 'Quantum Computing', description: 'Study of quantum systems for computation' },
+        { id: 102, name: 'Neural Networks', description: 'Computational models inspired by the brain' },
+        { id: 103, name: 'Data Structures', description: 'Methods of organizing data for efficient access' },
+        { id: 104, name: 'Machine Learning Ethics', description: 'Ethical considerations in ML applications' }
+      ];
+    }
   });
   
   // Fetch learning progress data
-  const { data: learningProgress, isLoading: isLoadingProgress } = useQuery({
+  const { data: learningProgress, isLoading: isLoadingProgress } = useQuery<LearningProgress[]>({
     queryKey: ['/api/learning'],
+    queryFn: async () => {
+      // Mock data for demonstration
+      return [
+        {
+          id: 1,
+          conceptId: 101,
+          comprehension: 85,
+          practice: 70,
+          reviewCount: 3,
+          interval: 4,
+          nextReviewDate: '2025-05-26T14:30:00Z',
+          lastReviewDate: '2025-05-22T14:30:00Z',
+          lastReviewed: '2025-05-22T14:30:00Z',
+          strengthFactor: 0.8,
+          easeFactor: 0.8
+        },
+        {
+          id: 2,
+          conceptId: 102,
+          comprehension: 65,
+          practice: 60,
+          reviewCount: 2,
+          interval: 2,
+          nextReviewDate: '2025-05-24T10:15:00Z',
+          lastReviewDate: '2025-05-21T10:15:00Z',
+          lastReviewed: '2025-05-21T10:15:00Z',
+          strengthFactor: 0.6,
+          easeFactor: 0.6
+        },
+        {
+          id: 3,
+          conceptId: 103,
+          comprehension: 92,
+          practice: 85,
+          reviewCount: 4,
+          interval: 7,
+          nextReviewDate: '2025-05-27T16:45:00Z',
+          lastReviewDate: '2025-05-20T16:45:00Z',
+          lastReviewed: '2025-05-20T16:45:00Z',
+          strengthFactor: 0.9,
+          easeFactor: 0.9
+        }
+      ];
+    }
   });
 
   // Format date for display
@@ -47,7 +129,7 @@ export default function Learning() {
   const getLearningStatus = (conceptId: number) => {
     if (!learningProgress) return { status: 'Not Started', dueDate: 'Start now' };
     
-    const progress = learningProgress.find((p: any) => p.conceptId === conceptId);
+    const progress = learningProgress.find(p => p.conceptId === conceptId);
     if (!progress) return { status: 'Not Started', dueDate: 'Start now' };
     
     const now = new Date();
@@ -96,7 +178,7 @@ export default function Learning() {
         </p>
       </div>
       
-      <Tabs defaultValue="learning">
+      <Tabs defaultValue={activeTab} onValueChange={setActiveTab}>
         <TabsList className="mb-4">
           <TabsTrigger value="learning">
             <Brain className="h-4 w-4 mr-2" />
@@ -117,7 +199,7 @@ export default function Learning() {
             {isLoadingConcepts ? (
               <p>Loading concepts...</p>
             ) : (
-              concepts?.map((concept: any) => {
+              concepts?.map((concept) => {
                 const { status, dueDate, progress } = getLearningStatus(concept.id);
                 return (
                   <Card key={concept.id} className="overflow-hidden">
@@ -192,12 +274,12 @@ export default function Learning() {
               <div className="mt-4 space-y-4">
                 {isLoadingProgress ? (
                   <p>Loading schedule...</p>
-                ) : learningProgress?.length > 0 ? (
+                ) : learningProgress && learningProgress.length > 0 ? (
                   learningProgress
-                    .filter((p: any) => p.nextReviewDate)
-                    .sort((a: any, b: any) => new Date(a.nextReviewDate).getTime() - new Date(b.nextReviewDate).getTime())
-                    .map((progress: any) => {
-                      const concept = concepts?.find((c: any) => c.id === progress.conceptId);
+                    .filter((p) => p.nextReviewDate)
+                    .sort((a, b) => new Date(a.nextReviewDate).getTime() - new Date(b.nextReviewDate).getTime())
+                    .map((progress) => {
+                      const concept = concepts?.find((c) => c.id === progress.conceptId);
                       const now = new Date();
                       const nextReview = new Date(progress.nextReviewDate);
                       const isDue = nextReview < now;

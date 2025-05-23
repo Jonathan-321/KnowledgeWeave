@@ -79,8 +79,19 @@ export default function InteractiveGraph() {
         event.stopPropagation();
         
         if (d.type === "concept") {
-          // Navigate directly to the learning page for this concept
-          window.location.href = `/learning?conceptId=${d.id}`;
+          // Find the concept in the concepts data
+          const selectedConcept = concepts?.find((c: any) => c.id === d.id);
+          
+          if (selectedConcept) {
+            // Dispatch a custom event to notify parent components that a concept was selected
+            const conceptSelectedEvent = new CustomEvent('conceptSelected', { 
+              detail: selectedConcept,
+              bubbles: true
+            });
+            event.target.dispatchEvent(conceptSelectedEvent);
+          } else {
+            console.error('Concept not found in concepts data:', d.id);
+          }
         } else if (d.type === "document") {
           // For documents, navigate to the documents page
           window.location.href = `/documents`;
