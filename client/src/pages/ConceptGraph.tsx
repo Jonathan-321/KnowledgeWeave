@@ -39,7 +39,7 @@ export default function ConceptGraph() {
   // Handle clicking "Learn This Concept" button
   const handleLearnConcept = () => {
     if (selectedConcept) {
-      navigate(`/learning?conceptId=${selectedConcept.id}`);
+      navigate(`/concept/${selectedConcept.id}/learn`);
     }
   };
 
@@ -81,13 +81,13 @@ export default function ConceptGraph() {
             onClick={() => {
               // Navigate to the first concept in the list
               if (concepts && Array.isArray(concepts) && concepts.length > 0) {
-                window.location.href = `/learning?conceptId=${concepts[0].id}`;
+                navigate(`/concept/${concepts[0].id}/learn`);
               } else {
                 alert('No concepts available. Please generate sample concepts first.');
               }
             }}
           >
-            Test Concept Navigation
+            Explore Resource Graph
           </Button>
         </div>
       </div>
@@ -238,9 +238,9 @@ export default function ConceptGraph() {
                     <div className="space-y-3">
                     {concepts && Array.isArray(concepts) && 
                       concepts
-                        .filter((c: any) => c.id !== selectedConcept.id)
+                        .filter((c: Concept) => c.id !== selectedConcept.id)
                         .slice(0, 3)
-                        .map((concept: any) => (
+                        .map((concept: Concept) => (
                           <div 
                             key={concept.id}
                             className="flex items-center p-2 border rounded-lg cursor-pointer hover:bg-gray-50"

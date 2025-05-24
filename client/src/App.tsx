@@ -11,19 +11,21 @@ import Documents from "./pages/Documents";
 import Learning from "./pages/Learning";
 import Insights from "./pages/Insights";
 import ConceptGraph from "./pages/ConceptGraph";
+import KnowledgeGraph from "./pages/KnowledgeGraph";
 import Dashboard from "./pages/Dashboard";
 import ProfileSettings from "./pages/ProfileSettings";
 import { Suspense } from "react";
 import Statistics from "./pages/Statistics";
+import { ConceptLearningHub } from "./pages/ConceptLearningHub";
 
-// Type for route params
+import type { RouteComponentProps } from 'wouter';
 
 // Type for route params
 type Params = { conceptId?: string };
 
-// Function to convert route params to component props
-const withRouteParams = (Component: any, initialProps: any = {}) => 
-  (params: Params) => <Component {...initialProps} {...params} />;
+// Function to convert Wouter route params to component props
+const withRouteParams = (Component: React.ComponentType<any>, initialProps: any = {}) => 
+  (props: RouteComponentProps<any>) => <Component {...initialProps} {...props.params} />;
 
 function Router() {
   return (
@@ -34,7 +36,8 @@ function Router() {
         <Route path="/learning" component={Learning} />
         <Route path="/insights" component={Insights} />
         <Route path="/knowledge" component={ConceptGraph} />
-        <Route path="/graph" component={ConceptGraph} />
+        <Route path="/graph" component={KnowledgeGraph} />
+        <Route path="/graph/:conceptId" component={withRouteParams(KnowledgeGraph)} />
         <Route path="/dashboard" component={Dashboard} />
         <Route path="/profile" component={ProfileSettings} />
         <Route path="/statistics">
@@ -50,6 +53,7 @@ function Router() {
             return <Learning conceptId={conceptIdParam} initialTab="quiz" />;
           }}
         </Route>
+        <Route path="/concept/:conceptId/learn" component={withRouteParams(ConceptLearningHub)} />
         <Route component={NotFound} />
       </Switch>
     </MainLayout>

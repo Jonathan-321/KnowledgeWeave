@@ -9,6 +9,9 @@ import { generateInsights, extractConcepts } from "./services/anthropic";
 import { generateQuizQuestions } from "./services/quizGenerator";
 import { getRecommendedConcepts } from "./services/vectordb";
 import { resourceService } from "./services/resourceService";
+import graphRoutes from './api/graph-routes';
+import visualResourcesRoutes from './api/visual-resources-routes';
+import resourceGraphRoutes from './api/resource-graph-routes';
 import {
   insertDocumentSchema,
   insertConceptSchema,
@@ -254,6 +257,14 @@ function generateSampleQuizForConcept(concept: any) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register knowledge graph routes
+  app.use('/api/graph', graphRoutes);
+  
+  // Register visual resources routes
+  app.use('/api/visual-resources', visualResourcesRoutes);
+  
+  // Register resource graph routes
+  app.use('/api/resource-graph', resourceGraphRoutes);
   // Documents API
   app.post("/api/documents", upload.single("file"), async (req, res) => {
     try {

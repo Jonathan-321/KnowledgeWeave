@@ -49,10 +49,16 @@ const NavMenu: React.FC = () => {
       description: 'Manage your learning resources'
     },
     {
-      name: 'Knowledge Graph',
+      name: 'Basic Knowledge Graph',
       path: '/knowledge',
       icon: <Network className="h-4 w-4" />,
-      description: 'Explore concept connections'
+      description: 'Basic concept connections'
+    },
+    {
+      name: 'Enhanced Knowledge Graph',
+      path: '/graph',
+      icon: <Database className="h-4 w-4" />,
+      description: 'Interactive knowledge graph with resources'
     },
     {
       name: 'Statistics',
